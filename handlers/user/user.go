@@ -3,16 +3,13 @@ package user
 import (
 	"strings"
 	// "fmt"
-	"net/http"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/jrogozen/wargroovy/internal/config"
 	u "github.com/jrogozen/wargroovy/utils"
+	"golang.org/x/crypto/bcrypt"
+	"net/http"
 )
 
 type User struct {
@@ -31,8 +28,8 @@ func Routes(configuration *config.Config) *chi.Mux {
 	return router
 }
 
-/*
-	Return { "status": true, "message": "ok" }, true
+/*Validate validates user fields for user creation
+=> { "status": true, "message": "ok" }, true
 */
 func (user *User) Validate(configuration *config.Config) (map[string]interface{}, bool) {
 	if !strings.Contains(user.Email, "@") {
@@ -81,7 +78,7 @@ func (user *User) Create(configuration *config.Config) map[string]interface{} {
 	return response
 }
 
-func findUser(configuration *config.Config, id string) *User {
+func FindUser(configuration *config.Config, id string) *User {
 	user := &User{}
 
 	configuration.Database.Table("users").Where("id = ?", id).First(user)
@@ -115,7 +112,7 @@ func CreateAUser(configuration *config.Config) http.HandlerFunc {
 func GetAUser(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "userId")
-		user := findUser(configuration, userID)
+		user := FindUser(configuration, userID)
 
 		if user == nil {
 			u.Respond(w, r, u.Message(false, "Could not find user"))
