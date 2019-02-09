@@ -10,7 +10,7 @@
     [X] - GET /user/{userId}
 
 #### /campaign
-    [] - POST /campaign
+    [x] - POST /campaign
     [] - POST /campign/map
     [] - GET /campaign/{campaignId}
     [] - GET /campaign/list

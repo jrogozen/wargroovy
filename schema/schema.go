@@ -20,5 +20,18 @@ type Campaign struct {
 	ThumbPhotoURL     string `json:"thumbPhotoUrl"`
 	LargePhotoURL     string `json:"largePhotoUrl"`
 	SingleMapCampaign bool   `gorm:"DEFAULT:true" json:"singleMapCampaign"`
-	UserID            int
+	UserID            int    `json:"userId"`
+	Maps              []Map  `gorm:"foreignkey:CampaignID"`
+}
+
+type Map struct {
+	gorm.Model
+
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	ThumbPhotoURL string `json:"thumbPhotoUrl"`
+	LargePhotoURL string `json:"largePhotoUrl"`
+	Views         int    `json:"views"`
+	DownloadCode  string `json:"downloadCode"`
+	CampaignID    int    `json:"campaignId"`
 }
