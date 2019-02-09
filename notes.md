@@ -11,9 +11,9 @@
 
 #### /campaign
     [x] - POST /campaign
-    [] - POST /campign/map
-    [] - GET /campaign/{campaignId}
-    [] - GET /campaign/list
+    [x] - POST /campign/map
+    [x] - GET /campaign/{campaignId}
+    [] - GET /campaign/list // list of compaigns sortedBy?
     [] - PUT /campaign/{campaignId}
     [] - PUT /campaign/{campaignId}/map/{mapId} // necessary?
 
@@ -68,3 +68,5 @@ on frontend, user is asked if they'd like to save a campaign or a single map
         - prompt for map info
 
 all maps must be attached to a campaign. UI is different for single vs multi-map campaigns
+
+can think about separating http handlers and database actions into separate packages
