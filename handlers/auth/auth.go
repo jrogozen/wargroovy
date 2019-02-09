@@ -4,8 +4,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/jinzhu/gorm"
-	"github.com/jrogozen/wargroovy/handlers/user"
 	"github.com/jrogozen/wargroovy/internal/config"
+	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -20,7 +20,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 }
 
 func Login(configuration *config.Config, email string, password string) map[string]interface{} {
-	user := &user.User{}
+	user := &schema.User{}
 
 	err := configuration.Database.Table("users").Where("email = ?", email).First(user).Error
 
@@ -50,7 +50,7 @@ func Login(configuration *config.Config, email string, password string) map[stri
 
 func LoginAUser(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := &user.User{}
+		user := &schema.User{}
 
 		// decode request body into user struct
 		err := render.DecodeJSON(r.Body, user)

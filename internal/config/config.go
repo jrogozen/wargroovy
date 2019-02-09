@@ -1,17 +1,16 @@
 package config
 
 import (
+	"fmt"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
-	"fmt"
-
-	"github.com/joho/godotenv"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/jinzhu/gorm"
 )
 
 type Constants struct {
-	PORT string
+	PORT   string
 	DB_URI string
 }
 
@@ -50,7 +49,7 @@ func New() (*Config, error) {
 
 	fmt.Println(dbUri)
 
-	constants := Constants{ PORT: port, DB_URI: dbUri }
+	constants := Constants{PORT: port, DB_URI: dbUri}
 
 	// attach to config struct
 	config.Constants = constants
@@ -67,4 +66,3 @@ func New() (*Config, error) {
 
 	return &config, err
 }
-

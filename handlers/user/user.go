@@ -7,17 +7,11 @@ import (
 	"github.com/go-chi/render"
 	"github.com/jinzhu/gorm"
 	"github.com/jrogozen/wargroovy/internal/config"
+	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
-
-type User struct {
-	gorm.Model
-
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
 
 func Routes(configuration *config.Config) *chi.Mux {
 	router := chi.NewRouter()
@@ -31,7 +25,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 /*Validate validates user fields for user creation
 => { "status": true, "message": "ok" }, true
 */
-func (user *User) Validate(configuration *config.Config) (map[string]interface{}, bool) {
+func Validate(configuration *config.Config, user *schema.User) (map[string]interface{}, bool) {
 	if !strings.Contains(user.Email, "@") {
 		return u.Message(false, "Email address not valid"), false
 	}
@@ -40,7 +34,7 @@ func (user *User) Validate(configuration *config.Config) (map[string]interface{}
 		return u.Message(false, "Invalid password"), false
 	}
 
-	temp := &User{}
+	temp := &schema.User{}
 
 	err := configuration.Database.Table("users").Where("email = ?", user.Email).First(temp).Error
 
@@ -51,11 +45,11 @@ func (user *User) Validate(configuration *config.Config) (map[string]interface{}
 		return u.Message(false, "Email address already in use"), false
 	}
 
-	return u.Message(false, "Valid"), true
+	return u.Message(true, "Valid"), true
 }
 
-func (user *User) Create(configuration *config.Config) map[string]interface{} {
-	if resp, ok := user.Validate(configuration); !ok {
+func Create(configuration *config.Config, user *schema.User) map[string]interface{} {
+	if resp, ok := Validate(configuration, user); !ok {
 		return resp
 	}
 
@@ -78,10 +72,10 @@ func (user *User) Create(configuration *config.Config) map[string]interface{} {
 	return response
 }
 
-func FindUser(configuration *config.Config, id string) *User {
-	user := &User{}
+func FindUser(configuration *config.Config, id string) *schema.User {
+	user := &schema.User{}
 
-	configuration.Database.Table("users").Where("id = ?", id).First(user)
+	configuration.Database.Preload("Campaigns").Table("users").Where("id = ?", id).First(user)
 
 	if user.Email == "" {
 		return nil
@@ -95,7 +89,7 @@ func FindUser(configuration *config.Config, id string) *User {
 
 func CreateAUser(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := &User{}
+		user := &schema.User{}
 
 		// decode request body into user struct
 		err := render.DecodeJSON(r.Body, user)
@@ -103,7 +97,7 @@ func CreateAUser(configuration *config.Config) http.HandlerFunc {
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Invalid request"))
 		} else {
-			resp := user.Create(configuration)
+			resp := Create(configuration, user)
 			u.Respond(w, r, resp)
 		}
 	})

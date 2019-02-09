@@ -1,16 +1,15 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-
 	"github.com/jrogozen/wargroovy/handlers/auth"
+	"github.com/jrogozen/wargroovy/handlers/campaign"
 	"github.com/jrogozen/wargroovy/handlers/user"
 	"github.com/jrogozen/wargroovy/internal/config"
+	"log"
+	"net/http"
 )
 
 func Routes(configuration *config.Config) *chi.Mux {
@@ -25,7 +24,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 
 	router.Route("/v1/api", func(r chi.Router) {
 		r.Mount("/user", user.Routes(configuration))
-
+		r.Mount("/campaign", campaign.Routes(configuration))
 		r.Mount("/auth", auth.Routes(configuration))
 	})
 
@@ -40,6 +39,15 @@ func main() {
 	}
 
 	router := Routes(configuration)
+
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		log.Printf("%s %s\n", method, route) // Walk and print out all routes
+		return nil
+	}
+
+	if err := chi.Walk(router, walkFunc); err != nil {
+		log.Panicf("Logging err: %s\n", err.Error()) // panic if there is an error
+	}
 
 	log.Println("Serving application at PORT: " + configuration.Constants.PORT)
 	log.Fatal(http.ListenAndServe(":"+configuration.Constants.PORT, router))
