@@ -79,6 +79,12 @@ func FindCampaign(configuration *config.Config, id string) *schema.Campaign {
 	return campaign
 }
 
+func IncrementCampaignView(configuration *config.Config, campaign schema.Campaign) schema.Campaign {
+	configuration.Database.Model(&campaign).Update("views", campaign.Views+1)
+
+	return campaign
+}
+
 /*FindCampaignList returns ordered list of campaigns
 { orderBy, limit, start }
 */
@@ -99,6 +105,9 @@ func GetACampaign(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		campaignID := chi.URLParam(r, "campaignId")
 		campaign := FindCampaign(configuration, campaignID)
+
+		// increment view counter
+		IncrementCampaignView(configuration, *campaign)
 
 		if campaign == nil {
 			u.Respond(w, r, u.Message(false, "Could not find campaign"))
