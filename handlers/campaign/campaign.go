@@ -88,14 +88,36 @@ func IncrementCampaignView(configuration *config.Config, campaign schema.Campaig
 /*FindCampaignList returns ordered list of campaigns
 { orderBy, limit, start }
 */
-func FindCampaignList(configuration *config.Config, orderBy string, limit int, start int) []*schema.Campaign {
-	campaigns := make([]*schema.Campaign, 0, limit)
+func FindCampaignList(configuration *config.Config, orderBy string, limit string, offset string) []*schema.Campaign {
+	limitInt, _ := strconv.Atoi(limit)
+	offsetInt, _ := strconv.Atoi(offset)
+	campaigns := make([]*schema.Campaign, 0, limitInt)
+
+	orderQueryString := ""
+
+	switch orderBy {
+	case "created_ascending":
+		orderQueryString = "created_at asc"
+	case "created_descending":
+		orderQueryString = "created_at desc"
+	case "views_ascending":
+		orderQueryString = "views asc"
+	case "views_descending":
+		orderQueryString = "views desc"
+	case "alphabetical_asc":
+		orderQueryString = "name asc"
+	case "alphabetical_desc":
+		orderQueryString = "name desc"
+	default:
+		orderQueryString = "created_at desc"
+	}
 
 	configuration.Database.
 		Preload("Maps").
 		Table("campaigns").
-		Order("created_at desc").
-		Limit(limit).
+		Order(orderQueryString).
+		Limit(limitInt).
+		Offset(offsetInt).
 		Find(&campaigns)
 
 	return campaigns
@@ -122,7 +144,11 @@ func GetACampaign(configuration *config.Config) http.HandlerFunc {
 
 func GetCampaignsList(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		campaigns := FindCampaignList(configuration, "test", 20, 0)
+		limit := u.StringWithDefault(r.URL.Query().Get("limit"), "20")
+		offset := u.StringWithDefault(r.URL.Query().Get("offset"), "-1")
+		orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "created_descending")
+
+		campaigns := FindCampaignList(configuration, orderBy, limit, offset)
 
 		response := u.Message(true, "Campaigns found")
 		response["campaigns"] = campaigns

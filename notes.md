@@ -13,7 +13,7 @@
     [x] - POST /campaign
     [x] - POST /campign/map
     [x] - GET /campaign/{campaignId}
-    [] - GET /campaign/list - list of compaigns sortedBy?
+    [X] - GET /campaign/list - list of compaigns with queryParam
     [] - PUT /campaign/{campaignId}
     [] - PUT /campaign/{campaignId}/map/{mapId} // necessary?
 
