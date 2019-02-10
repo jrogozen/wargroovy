@@ -1,9 +1,8 @@
 package utils
 
 import (
-	"net/http"
-
 	"github.com/go-chi/render"
+	"net/http"
 )
 
 func Message(status bool, message string) map[string]interface{} {

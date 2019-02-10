@@ -19,6 +19,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 	// campaigns
 	router.Post("/", CreateACampaign(configuration))
 	router.Get("/{campaignId}", GetACampaign(configuration))
+	router.Get("/list", GetCampaignsList(configuration))
 
 	return router
 }
@@ -78,6 +79,22 @@ func FindCampaign(configuration *config.Config, id string) *schema.Campaign {
 	return campaign
 }
 
+/*FindCampaignList returns ordered list of campaigns
+{ orderBy, limit, start }
+*/
+func FindCampaignList(configuration *config.Config, orderBy string, limit int, start int) []*schema.Campaign {
+	campaigns := make([]*schema.Campaign, 0, limit)
+
+	configuration.Database.
+		Preload("Maps").
+		Table("campaigns").
+		Order("created_at desc").
+		Limit(limit).
+		Find(&campaigns)
+
+	return campaigns
+}
+
 func GetACampaign(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		campaignID := chi.URLParam(r, "campaignId")
@@ -91,6 +108,17 @@ func GetACampaign(configuration *config.Config) http.HandlerFunc {
 
 			u.Respond(w, r, response)
 		}
+	})
+}
+
+func GetCampaignsList(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		campaigns := FindCampaignList(configuration, "test", 20, 0)
+
+		response := u.Message(true, "Campaigns found")
+		response["campaigns"] = campaigns
+
+		u.Respond(w, r, response)
 	})
 }
 
