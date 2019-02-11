@@ -3,19 +3,19 @@
 ### handlers
 
 #### /auth
-    [X] - POST - /auth/login
+- [X] - POST - /auth/login
 
 #### /user
-    [x] - POST /user
-    [X] - GET /user/{userId}
+- [x] - POST /user
+- [X] - GET /user/{userId}
 
 #### /campaign
-    [x] - POST /campaign
-    [x] - POST /campign/map
-    [x] - GET /campaign/{campaignId}
-    [X] - GET /campaign/list - list of compaigns with queryParam
-    [X] - PUT /campaign/{campaignId}
-    [X] - PUT /campaign/{campaignId}/map/{mapId}
+- [x] - POST /campaign
+- [x] - POST /campign/map
+- [x] - GET /campaign/{campaignId}
+- [X] - GET /campaign/list - list of compaigns with queryParam
+- [X] - PUT /campaign/{campaignId}
+- [X] - PUT /campaign/{campaignId}/map/{mapId}
 
 
 ### relationships
@@ -43,3 +43,6 @@ can think about separating http handlers and database actions into separate pack
 - [] split out handler code into multiple files per package (create, update, etc...)
 - [x] simplify nested conditionals in web response code (return a response?)
 - [] set up level based logging. maybe [logrus](https://github.com/Sirupsen/logrus)
+- [] set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)
+- [] replace gorm with raw sql queries
+- [] jwt middleware should return json instead of 40x + text
