@@ -15,7 +15,7 @@
     [x] - GET /campaign/{campaignId}
     [X] - GET /campaign/list - list of compaigns with queryParam
     [] - PUT /campaign/{campaignId}
-    [] - PUT /campaign/{campaignId}/map/{mapId} // necessary?
+    [] - PUT /campaign/{campaignId}/map/{mapId}
 
 
 ### relationships
@@ -70,3 +70,5 @@ on frontend, user is asked if they'd like to save a campaign or a single map
 all maps must be attached to a campaign. UI is different for single vs multi-map campaigns
 
 can think about separating http handlers and database actions into separate packages
+
+once jwt is added, we can use that to determine if a user has permissions to add to a campaign, or to edit a campaign or map

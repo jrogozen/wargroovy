@@ -20,6 +20,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 	router.Post("/", CreateACampaign(configuration))
 	router.Get("/{campaignId}", GetACampaign(configuration))
 	router.Get("/list", GetCampaignsList(configuration))
+	router.Put("/{campaignId}", EditACampaign(configuration))
 
 	return router
 }
@@ -43,8 +44,6 @@ func Create(configuration *config.Config, campaign *schema.Campaign) map[string]
 	if campaign.ID <= 0 {
 		return u.Message(false, "Failed to create campaign")
 	}
-
-	// remove user info
 
 	response := u.Message(true, "Campaign created")
 	response["campaign"] = campaign
@@ -123,6 +122,18 @@ func FindCampaignList(configuration *config.Config, orderBy string, limit string
 	return campaigns
 }
 
+func UpdateCampaign(configuration *config.Config, campaignId string, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
+	campaign := FindCampaign(configuration, campaignId)
+
+	if campaign == nil {
+		return nil
+	} else {
+		configuration.Database.Model(&campaign).Updates(&updatedCampaign)
+
+		return campaign
+	}
+}
+
 func GetACampaign(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		campaignID := chi.URLParam(r, "campaignId")
@@ -154,6 +165,31 @@ func GetCampaignsList(configuration *config.Config) http.HandlerFunc {
 		response["campaigns"] = campaigns
 
 		u.Respond(w, r, response)
+	})
+}
+
+func EditACampaign(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		campaignID := chi.URLParam(r, "campaignId")
+		campaign := &schema.BaseCampaign{}
+
+		err := render.DecodeJSON(r.Body, campaign)
+
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error updating campaign"))
+		} else {
+			updatedCampaign := UpdateCampaign(configuration, campaignID, campaign)
+
+			if updatedCampaign == nil {
+				response := u.Message(false, "Could not find campaign")
+				u.Respond(w, r, response)
+			} else {
+				response := u.Message(true, "Campaign updated")
+				response["campaign"] = updatedCampaign
+
+				u.Respond(w, r, response)
+			}
+		}
 	})
 }
 

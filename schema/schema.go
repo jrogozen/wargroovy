@@ -12,17 +12,21 @@ type User struct {
 	Campaigns []Campaign `gorm:"foreignkey:UserID"`
 }
 
-type Campaign struct {
-	gorm.Model
-
+//BaseCampaign is safe to edit by User
+type BaseCampaign struct {
 	Name              string `json:"name"`
 	Description       string `json:"description"`
 	ThumbPhotoURL     string `json:"thumbPhotoUrl"`
 	LargePhotoURL     string `json:"largePhotoUrl"`
 	SingleMapCampaign bool   `gorm:"DEFAULT:true" json:"singleMapCampaign"`
-	Views             int    `json:"views"`
-	UserID            int    `json:"userId"`
-	Maps              []Map  `gorm:"foreignkey:CampaignID"`
+}
+
+type Campaign struct {
+	gorm.Model
+	*BaseCampaign
+	UserID int   `json:"userId"`
+	Views  int   `json:"views"`
+	Maps   []Map `gorm:"foreignkey:CampaignID"`
 }
 
 type Map struct {
