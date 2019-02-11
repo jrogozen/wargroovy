@@ -76,10 +76,12 @@ func CreateACampaign(configuration *config.Config) http.HandlerFunc {
 
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Invalid request"))
-		} else {
-			resp := Create(configuration, campaign)
-			u.Respond(w, r, resp)
+			return
 		}
+
+		resp := Create(configuration, campaign)
+		u.Respond(w, r, resp)
+		return
 	})
 }
 
@@ -139,24 +141,16 @@ func FindCampaignList(configuration *config.Config, orderBy string, limit string
 	return campaigns
 }
 
-// TODO: probably split this up into
-// Find -> validate -> update
-func UpdateCampaign(configuration *config.Config, claims map[string]interface{}, campaignId string, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
-	campaign := FindCampaign(configuration, campaignId)
-
+func UpdateCampaign(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
 	campaignUserID := campaign.UserID
 
 	if _, ok := u.IsUserAuthorized(campaignUserID, claims); !ok {
 		return nil
 	}
 
-	if campaign == nil {
-		return nil
-	} else {
-		configuration.Database.Model(&campaign).Updates(&updatedCampaign)
+	configuration.Database.Model(&campaign).Updates(&updatedCampaign)
 
-		return campaign
-	}
+	return campaign
 }
 
 func GetACampaign(configuration *config.Config) http.HandlerFunc {
@@ -196,34 +190,42 @@ func GetCampaignsList(configuration *config.Config) http.HandlerFunc {
 func EditACampaign(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		campaignID := chi.URLParam(r, "campaignId")
-		campaign := &schema.BaseCampaign{}
+		campaignUpdate := &schema.BaseCampaign{}
 
 		// requires jwt-auth middleware to be used in part of the router stack
 		_, claims, err := jwtauth.FromContext(r.Context())
 
-		// TODO: can we return with a response to terminate?
-		// would clean up these nested routes
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Error authorizing user"))
-		} else {
-			err := render.DecodeJSON(r.Body, campaign)
-
-			if err != nil {
-				u.Respond(w, r, u.Message(false, "Error updating campaign"))
-			} else {
-				updatedCampaign := UpdateCampaign(configuration, claims, campaignID, campaign)
-
-				if updatedCampaign == nil {
-					response := u.Message(false, "Could not find campaign")
-					u.Respond(w, r, response)
-				} else {
-					response := u.Message(true, "Campaign updated")
-					response["campaign"] = updatedCampaign
-
-					u.Respond(w, r, response)
-				}
-			}
+			return
 		}
+
+		err = render.DecodeJSON(r.Body, campaignUpdate)
+
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error updating campaign"))
+			return
+		}
+
+		originalCampaign := FindCampaign(configuration, campaignID)
+
+		if originalCampaign == nil {
+			u.Respond(w, r, u.Message(false, "Could not find campaign"))
+			return
+		}
+
+		updatedCampaign := UpdateCampaign(configuration, claims, originalCampaign, campaignUpdate)
+
+		if updatedCampaign == nil {
+			response := u.Message(false, "Not authorized to edit this campaign")
+			u.Respond(w, r, response)
+			return
+		}
+		response := u.Message(true, "Campaign updated")
+		response["campaign"] = updatedCampaign
+
+		u.Respond(w, r, response)
+		return
 	})
 }
 
@@ -269,10 +271,12 @@ func CreateAMap(configuration *config.Config) http.HandlerFunc {
 
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Invalid request"))
-		} else {
-			resp := CreateMap(configuration, m)
-			u.Respond(w, r, resp)
+			return
 		}
+
+		resp := CreateMap(configuration, m)
+		u.Respond(w, r, resp)
+		return
 	})
 }
 
@@ -311,25 +315,28 @@ func UpdateMap(configuration *config.Config, campaignId string, mapId string, up
 func EditAMap(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		campaignID := chi.URLParam(r, "campaignId")
-		mapId := chi.URLParam(r, "mapId")
+		mapID := chi.URLParam(r, "mapId")
 		m := &schema.BaseMap{}
 
 		err := render.DecodeJSON(r.Body, m)
 
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Error updating map"))
-		} else {
-			updatedMap := UpdateMap(configuration, campaignID, mapId, m)
-
-			if updatedMap == nil {
-				response := u.Message(false, "Could not find map")
-				u.Respond(w, r, response)
-			} else {
-				response := u.Message(true, "Map updated")
-				response["map"] = updatedMap
-
-				u.Respond(w, r, response)
-			}
+			return
 		}
+
+		updatedMap := UpdateMap(configuration, campaignID, mapID, m)
+
+		if updatedMap == nil {
+			response := u.Message(false, "Could not find map")
+			u.Respond(w, r, response)
+			return
+		}
+
+		response := u.Message(true, "Map updated")
+		response["map"] = updatedMap
+
+		u.Respond(w, r, response)
+		return
 	})
 }

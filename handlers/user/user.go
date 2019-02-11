@@ -109,10 +109,12 @@ func CreateAUser(configuration *config.Config) http.HandlerFunc {
 
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Invalid request"))
-		} else {
-			resp := Create(configuration, user)
-			u.Respond(w, r, resp)
+			return
 		}
+
+		resp := Create(configuration, user)
+		u.Respond(w, r, resp)
+		return
 	})
 }
 
@@ -123,11 +125,13 @@ func GetAUser(configuration *config.Config) http.HandlerFunc {
 
 		if user == nil {
 			u.Respond(w, r, u.Message(false, "Could not find user"))
-		} else {
-			response := u.Message(true, "User found")
-			response["user"] = user
-
-			u.Respond(w, r, response)
+			return
 		}
+
+		response := u.Message(true, "User found")
+		response["user"] = user
+
+		u.Respond(w, r, response)
+		return
 	})
 }

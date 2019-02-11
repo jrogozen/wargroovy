@@ -58,10 +58,12 @@ func LoginAUser(configuration *config.Config) http.HandlerFunc {
 
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Invalid request"))
-		} else {
-			rsp := Login(configuration, user.Email, user.Password)
-
-			u.Respond(w, r, rsp)
+			return
 		}
+
+		rsp := Login(configuration, user.Email, user.Password)
+
+		u.Respond(w, r, rsp)
+		return
 	})
 }

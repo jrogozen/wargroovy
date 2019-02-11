@@ -31,9 +31,9 @@ func InitJWT() *jwtauth.JWTAuth {
 }
 
 func IsUserAuthorized(attemptedUserID uint, claims map[string]interface{}) (map[string]interface{}, bool) {
-	actualUserID := claims["UserID"]
+	actualUserID := claims["UserID"].(float64)
 
-	if actualUserID != attemptedUserID {
+	if uint(actualUserID) != attemptedUserID {
 		return Message(false, "Mismatched token userId and requestId"), false
 	}
 

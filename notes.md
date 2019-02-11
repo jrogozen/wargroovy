@@ -71,4 +71,7 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 
 can think about separating http handlers and database actions into separate packages
 
-once jwt is added, we can use that to determine if a user has permissions to add to a campaign, or to edit a campaign or map
+### misc todo
+- [] either remove chi/jwtauth or jwt/go
+- [] split out handler code into multiple files per package (create, update, etc...)
+- [x] simplify nested conditionals in web response code (return a response?)
