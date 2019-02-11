@@ -1,9 +1,9 @@
 package user
 
 import (
-	"strings"
-	// "fmt"
+	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/jinzhu/gorm"
 	"github.com/jrogozen/wargroovy/internal/config"
@@ -11,13 +11,27 @@ import (
 	u "github.com/jrogozen/wargroovy/utils"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"strings"
 )
 
 func Routes(configuration *config.Config) *chi.Mux {
 	router := chi.NewRouter()
 
-	router.Post("/", CreateAUser(configuration))
-	router.Get("/{userId}", GetAUser(configuration))
+	router.Group(func(router chi.Router) {
+		/* looks for tokens in this order:
+		'jwt' URI query parameter
+		'Authorization: BEARER T' request header
+		'jwt' Cookie value
+		*/
+		router.Use(jwtauth.Verifier(configuration.TokenAuth))
+		router.Use(jwtauth.Authenticator)
+
+	})
+
+	router.Group(func(router chi.Router) {
+		router.Post("/", CreateAUser(configuration))
+		router.Get("/{userId}", GetAUser(configuration))
+	})
 
 	return router
 }
@@ -57,6 +71,7 @@ func Create(configuration *config.Config, user *schema.User) map[string]interfac
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
 
+	fmt.Println(*user)
 	// add to db
 	configuration.Database.Create(user)
 
@@ -64,25 +79,23 @@ func Create(configuration *config.Config, user *schema.User) map[string]interfac
 		return u.Message(false, "Failed to create user")
 	}
 
+	// jwt
+	u.AttachToken(user)
+
 	response := u.Message(true, "User created")
 	response["user"] = user
-
-	// TODO: create jwt
 
 	return response
 }
 
-func FindUser(configuration *config.Config, id string) *schema.User {
-	user := &schema.User{}
+func FindUser(configuration *config.Config, id string) *schema.UserWithOutPassword {
+	user := &schema.UserWithOutPassword{}
 
 	configuration.Database.Preload("Campaigns").Table("users").Where("id = ?", id).First(user)
 
 	if user.Email == "" {
 		return nil
 	}
-
-	// don't return sensitive info
-	user.Password = ""
 
 	return user
 }

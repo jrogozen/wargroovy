@@ -22,7 +22,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 func Login(configuration *config.Config, email string, password string) map[string]interface{} {
 	user := &schema.User{}
 
-	err := configuration.Database.Table("users").Where("email = ?", email).First(user).Error
+	err := configuration.Database.Preload("Campaigns").Table("users").Where("email = ?", email).First(user).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -40,7 +40,8 @@ func Login(configuration *config.Config, email string, password string) map[stri
 	// delete sensitive information
 	user.Password = ""
 
-	// TODO: create jwt
+	// jwt
+	u.AttachToken(user)
 
 	resp := u.Message(true, "Logged in")
 	resp["user"] = user

@@ -1,15 +1,30 @@
 package schema
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
 )
+
+type UserWithOutPassword struct {
+	*User
+
+	Password string `json:"-"`
+}
 
 type User struct {
 	gorm.Model
 
 	Email     string     `json:"email"`
-	Password  string     `json:"-"`
+	Token     string     `json:"token" sql:"-"`
+	Password  string     `json:"password"`
 	Campaigns []Campaign `gorm:"foreignkey:UserID"`
+}
+
+type TokenClaims struct {
+	jwt.StandardClaims
+
+	UserID uint
+	Admin  bool
 }
 
 //BaseCampaign is safe to edit via API
@@ -24,7 +39,7 @@ type BaseCampaign struct {
 type Campaign struct {
 	gorm.Model
 	*BaseCampaign
-	UserID int   `json:"userId"`
+	UserID uint  `json:"userId"`
 	Views  int   `json:"views"`
 	Maps   []Map `gorm:"foreignkey:CampaignID"`
 }
@@ -42,5 +57,5 @@ type Map struct {
 	gorm.Model
 	*BaseMap
 
-	CampaignID int `json:"campaignId"`
+	CampaignID uint `json:"campaignId"`
 }

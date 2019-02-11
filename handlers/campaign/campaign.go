@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"github.com/go-chi/chi"
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/jrogozen/wargroovy/internal/config"
 	"github.com/jrogozen/wargroovy/schema"
@@ -13,15 +14,30 @@ import (
 func Routes(configuration *config.Config) *chi.Mux {
 	router := chi.NewRouter()
 
-	// maps
-	router.Post("/{campaignId}/map", CreateAMap(configuration))
-	router.Put("/{campaignId}/map/{mapId}", EditAMap(configuration))
+	// var tokenAuth *jwtauth.JWTAuth
 
-	// campaigns
-	router.Post("/", CreateACampaign(configuration))
-	router.Get("/{campaignId}", GetACampaign(configuration))
-	router.Get("/list", GetCampaignsList(configuration))
-	router.Put("/{campaignId}", EditACampaign(configuration))
+	router.Group(func(router chi.Router) {
+		/* looks for tokens in this order:
+		'jwt' URI query parameter
+		'Authorization: BEARER T' request header
+		'jwt' Cookie value
+		*/
+		router.Use(jwtauth.Verifier(configuration.TokenAuth))
+		router.Use(jwtauth.Authenticator)
+
+		router.Post("/{campaignId}/map", CreateAMap(configuration))
+		router.Put("/{campaignId}/map/{mapId}", EditAMap(configuration))
+		router.Post("/", CreateACampaign(configuration))
+
+		router.Put("/{campaignId}", EditACampaign(configuration))
+
+	})
+
+	router.Group(func(router chi.Router) {
+		router.Get("/{campaignId}", GetACampaign(configuration))
+		router.Get("/list", GetCampaignsList(configuration))
+
+	})
 
 	return router
 }
@@ -123,8 +139,16 @@ func FindCampaignList(configuration *config.Config, orderBy string, limit string
 	return campaigns
 }
 
-func UpdateCampaign(configuration *config.Config, campaignId string, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
+// TODO: probably split this up into
+// Find -> validate -> update
+func UpdateCampaign(configuration *config.Config, claims map[string]interface{}, campaignId string, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
 	campaign := FindCampaign(configuration, campaignId)
+
+	campaignUserID := campaign.UserID
+
+	if _, ok := u.IsUserAuthorized(campaignUserID, claims); !ok {
+		return nil
+	}
 
 	if campaign == nil {
 		return nil
@@ -174,21 +198,30 @@ func EditACampaign(configuration *config.Config) http.HandlerFunc {
 		campaignID := chi.URLParam(r, "campaignId")
 		campaign := &schema.BaseCampaign{}
 
-		err := render.DecodeJSON(r.Body, campaign)
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, err := jwtauth.FromContext(r.Context())
 
+		// TODO: can we return with a response to terminate?
+		// would clean up these nested routes
 		if err != nil {
-			u.Respond(w, r, u.Message(false, "Error updating campaign"))
+			u.Respond(w, r, u.Message(false, "Error authorizing user"))
 		} else {
-			updatedCampaign := UpdateCampaign(configuration, campaignID, campaign)
+			err := render.DecodeJSON(r.Body, campaign)
 
-			if updatedCampaign == nil {
-				response := u.Message(false, "Could not find campaign")
-				u.Respond(w, r, response)
+			if err != nil {
+				u.Respond(w, r, u.Message(false, "Error updating campaign"))
 			} else {
-				response := u.Message(true, "Campaign updated")
-				response["campaign"] = updatedCampaign
+				updatedCampaign := UpdateCampaign(configuration, claims, campaignID, campaign)
 
-				u.Respond(w, r, response)
+				if updatedCampaign == nil {
+					response := u.Message(false, "Could not find campaign")
+					u.Respond(w, r, response)
+				} else {
+					response := u.Message(true, "Campaign updated")
+					response["campaign"] = updatedCampaign
+
+					u.Respond(w, r, response)
+				}
 			}
 		}
 	})
@@ -232,7 +265,7 @@ func CreateAMap(configuration *config.Config) http.HandlerFunc {
 
 		err := render.DecodeJSON(r.Body, m)
 
-		m.CampaignID = campaignID
+		m.CampaignID = uint(campaignID)
 
 		if err != nil {
 			u.Respond(w, r, u.Message(false, "Invalid request"))

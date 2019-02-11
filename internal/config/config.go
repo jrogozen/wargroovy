@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/go-chi/jwtauth"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
+	u "github.com/jrogozen/wargroovy/utils"
 	"log"
 	"os"
 )
@@ -16,7 +18,8 @@ type Constants struct {
 
 type Config struct {
 	Constants
-	Database *gorm.DB
+	Database  *gorm.DB
+	TokenAuth *jwtauth.JWTAuth
 }
 
 func NewDB(dbUri string) (*gorm.DB, error) {
@@ -63,6 +66,8 @@ func New() (*Config, error) {
 	}
 
 	config.Database = db
+
+	config.TokenAuth = u.InitJWT()
 
 	return &config, err
 }
