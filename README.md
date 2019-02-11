@@ -40,7 +40,7 @@ can think about separating http handlers and database actions into separate pack
 
 ### misc todo
 - [] either remove chi/jwtauth or jwt/go
-- [] split out handler code into multiple files per package (create, update, etc...)
+- [x] split out handler code into multiple files per package (create, update, etc...)
 - [x] simplify nested conditionals in web response code (return a response?)
 - [] set up level based logging. maybe [logrus](https://github.com/Sirupsen/logrus)
 - [] set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)
