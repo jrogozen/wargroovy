@@ -243,12 +243,60 @@ func CreateAMap(configuration *config.Config) http.HandlerFunc {
 	})
 }
 
-func UpdateMap(configuration *config.Config, mapId string, updatedMap *schema.Map) *schema.Map {
+func FindMap(configuration *config.Config, id string) *schema.Map {
+	m := &schema.Map{}
 
+	configuration.Database.Table("maps").Where("id = ?", id).First(m)
+
+	if m.ID == 0 {
+		return nil
+	}
+
+	return m
+}
+
+func UpdateMap(configuration *config.Config, campaignId string, mapId string, updatedMap *schema.BaseMap) *schema.Map {
+	// find campaign to get userId so we can verify that this user can update this map
+	// once we implement jwt
+	campaign := FindCampaign(configuration, campaignId)
+
+	if campaign == nil {
+		return nil
+	}
+
+	m := FindMap(configuration, mapId)
+
+	if m == nil || uint(m.CampaignID) != campaign.ID {
+		return nil
+	} else {
+		configuration.Database.Model(&m).Updates(&updatedMap)
+
+		return m
+	}
 }
 
 func EditAMap(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		campaignID := chi.URLParam(r, "campaignId")
+		mapId := chi.URLParam(r, "mapId")
+		m := &schema.BaseMap{}
 
+		err := render.DecodeJSON(r.Body, m)
+
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error updating map"))
+		} else {
+			updatedMap := UpdateMap(configuration, campaignID, mapId, m)
+
+			if updatedMap == nil {
+				response := u.Message(false, "Could not find map")
+				u.Respond(w, r, response)
+			} else {
+				response := u.Message(true, "Map updated")
+				response["map"] = updatedMap
+
+				u.Respond(w, r, response)
+			}
+		}
 	})
 }

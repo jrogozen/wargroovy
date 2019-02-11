@@ -12,7 +12,7 @@ type User struct {
 	Campaigns []Campaign `gorm:"foreignkey:UserID"`
 }
 
-//BaseCampaign is safe to edit by User
+//BaseCampaign is safe to edit via API
 type BaseCampaign struct {
 	Name              string `json:"name"`
 	Description       string `json:"description"`
@@ -29,13 +29,18 @@ type Campaign struct {
 	Maps   []Map `gorm:"foreignkey:CampaignID"`
 }
 
-type Map struct {
-	gorm.Model
-
+//BaseMap is safe to edit via API
+type BaseMap struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
 	ThumbPhotoURL string `json:"thumbPhotoUrl"`
 	LargePhotoURL string `json:"largePhotoUrl"`
 	DownloadCode  string `json:"downloadCode"`
-	CampaignID    int    `json:"campaignId"`
+}
+
+type Map struct {
+	gorm.Model
+	*BaseMap
+
+	CampaignID int `json:"campaignId"`
 }

@@ -15,7 +15,7 @@
     [x] - GET /campaign/{campaignId}
     [X] - GET /campaign/list - list of compaigns with queryParam
     [X] - PUT /campaign/{campaignId}
-    [] - PUT /campaign/{campaignId}/map/{mapId}
+    [X] - PUT /campaign/{campaignId}/map/{mapId}
 
 
 ### relationships
