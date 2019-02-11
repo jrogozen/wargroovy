@@ -15,6 +15,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 
 	// maps
 	router.Post("/{campaignId}/map", CreateAMap(configuration))
+	router.Put("/{campaignId}/map/{mapId}", EditAMap(configuration))
 
 	// campaigns
 	router.Post("/", CreateACampaign(configuration))
@@ -239,5 +240,15 @@ func CreateAMap(configuration *config.Config) http.HandlerFunc {
 			resp := CreateMap(configuration, m)
 			u.Respond(w, r, resp)
 		}
+	})
+}
+
+func UpdateMap(configuration *config.Config, mapId string, updatedMap *schema.Map) *schema.Map {
+
+}
+
+func EditAMap(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 	})
 }
