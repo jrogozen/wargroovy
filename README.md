@@ -19,46 +19,13 @@
 
 
 ### relationships
-
 users have campaigns
 campaigns have one user
 
 campaigns have maps
 map has one campaign
 
-
-### tables
-
-#### campaign
-    - id int
-    - name string
-    - description string
-    - thumb_photo_url string
-    - large_photo_url string
-    - single_map_campaign boolean
-
-#### map
-    - id int
-    - name string
-    - description string
-    - thumb_photo_url string
-    - large_photo_url string
-    - views int
-    - download_code string
-
-#### campaign_maps
-    - id int
-    - campaign_id int
-    - map_id int
-
-#### user_campaigns
-    - id int
-    - user_id int
-    - campaign_id
-
-
 ### notes
-
 on frontend, user is asked if they'd like to save a campaign or a single map
     - single map
         - create campaign with blank info + single_map_campaign TRUE
@@ -75,3 +42,4 @@ can think about separating http handlers and database actions into separate pack
 - [] either remove chi/jwtauth or jwt/go
 - [] split out handler code into multiple files per package (create, update, etc...)
 - [x] simplify nested conditionals in web response code (return a response?)
+- [] set up level based logging. maybe [logrus](https://github.com/Sirupsen/logrus)
