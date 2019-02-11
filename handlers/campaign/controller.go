@@ -33,7 +33,6 @@ func GetACampaign(configuration *config.Config) http.HandlerFunc {
 		campaignID := chi.URLParam(r, "campaignId")
 		campaign := FindCampaign(configuration, campaignID)
 
-		// increment view counter
 		IncrementCampaignView(configuration, *campaign)
 
 		if campaign == nil {
@@ -49,11 +48,8 @@ func GetACampaign(configuration *config.Config) http.HandlerFunc {
 
 func GetCampaignsList(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		limit := u.StringWithDefault(r.URL.Query().Get("limit"), "20")
-		offset := u.StringWithDefault(r.URL.Query().Get("offset"), "-1")
-		orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "created_descending")
-
-		campaigns := FindCampaignList(configuration, orderBy, limit, offset)
+		sortOptions := GetSortOptions(r)
+		campaigns := FindCampaignList(configuration, sortOptions)
 
 		response := u.Message(true, "Campaigns found")
 		response["campaigns"] = campaigns

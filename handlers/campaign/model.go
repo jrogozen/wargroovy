@@ -4,7 +4,6 @@ import (
 	"github.com/jrogozen/wargroovy/internal/config"
 	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
-	"strconv"
 )
 
 func UpdateCampaign(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
@@ -71,7 +70,7 @@ func Create(configuration *config.Config, campaign *schema.Campaign) map[string]
 	configuration.Database.Create(campaign)
 
 	if campaign.ID <= 0 {
-		return u.Message(false, "Failed to create campaign")
+		return nil
 	}
 
 	response := u.Message(true, "Campaign created")
@@ -103,39 +102,16 @@ func IncrementCampaignView(configuration *config.Config, campaign schema.Campaig
 	return campaign
 }
 
-/*FindCampaignList returns ordered list of campaigns
-{ orderBy, limit, start }
-*/
-func FindCampaignList(configuration *config.Config, orderBy string, limit string, offset string) []*schema.Campaign {
-	limitInt, _ := strconv.Atoi(limit)
-	offsetInt, _ := strconv.Atoi(offset)
-	campaigns := make([]*schema.Campaign, 0, limitInt)
-
-	orderQueryString := ""
-
-	switch orderBy {
-	case "created_ascending":
-		orderQueryString = "created_at asc"
-	case "created_descending":
-		orderQueryString = "created_at desc"
-	case "views_ascending":
-		orderQueryString = "views asc"
-	case "views_descending":
-		orderQueryString = "views desc"
-	case "alphabetical_asc":
-		orderQueryString = "name asc"
-	case "alphabetical_desc":
-		orderQueryString = "name desc"
-	default:
-		orderQueryString = "created_at desc"
-	}
+//FindCampaignList returns ordered list of campaigns
+func FindCampaignList(configuration *config.Config, options *SortOptions) []*schema.Campaign {
+	campaigns := make([]*schema.Campaign, 0, options.limit)
 
 	configuration.Database.
 		Preload("Maps").
 		Table("campaigns").
-		Order(orderQueryString).
-		Limit(limitInt).
-		Offset(offsetInt).
+		Order(options.orderBy).
+		Limit(options.limit).
+		Offset(options.offset).
 		Find(&campaigns)
 
 	return campaigns

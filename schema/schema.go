@@ -17,7 +17,7 @@ type User struct {
 	Email     string     `json:"email"`
 	Token     string     `json:"token" sql:"-"`
 	Password  string     `json:"password"`
-	Campaigns []Campaign `gorm:"foreignkey:UserID"`
+	Campaigns []Campaign `gorm:"foreignkey:UserID" json:"campaigns"`
 }
 
 type TokenClaims struct {
@@ -41,7 +41,7 @@ type Campaign struct {
 	*BaseCampaign
 	UserID uint  `json:"userId"`
 	Views  int   `json:"views"`
-	Maps   []Map `gorm:"foreignkey:CampaignID"`
+	Maps   []Map `gorm:"foreignkey:CampaignID" json:"maps"`
 }
 
 //BaseMap is safe to edit via API
