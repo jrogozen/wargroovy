@@ -45,5 +45,5 @@ can think about separating http handlers and database actions into separate pack
 - [x] set up level based logging. maybe [logrus](https://github.com/Sirupsen/logrus)
 - [] ~~set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)~~ temp use gorm.AutoMigrate
 - [] replace gorm with raw sql queries
-- [] jwt middleware should return json instead of 40x + text
+- [x] jwt middleware should return json instead of 40x + text
 - [] finish protecting user actions with jwt
