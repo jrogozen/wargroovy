@@ -6,8 +6,9 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
+	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -20,6 +21,14 @@ type Config struct {
 	Constants
 	Database  *gorm.DB
 	TokenAuth *jwtauth.JWTAuth
+}
+
+func Migrate(config *Config) {
+	log.Info("Migrating database.")
+
+	config.Database.AutoMigrate(&schema.User{})
+	config.Database.AutoMigrate(&schema.Campaign{})
+	config.Database.AutoMigrate(&schema.Map{})
 }
 
 func NewDB(dbUri string) (*gorm.DB, error) {
@@ -68,6 +77,8 @@ func New() (*Config, error) {
 	config.Database = db
 
 	config.TokenAuth = u.InitJWT()
+
+	Migrate(&config)
 
 	return &config, err
 }

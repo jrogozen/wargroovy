@@ -39,8 +39,8 @@ type BaseCampaign struct {
 type Campaign struct {
 	gorm.Model
 	*BaseCampaign
-	UserID uint  `json:"userId"`
-	Views  int   `json:"views"`
+	UserID uint  `json:"userId" sql:"type:integer REFERENCES users(id)"`
+	Views  int   `json:"views" gorm:"DEFAULT:0"`
 	Maps   []Map `gorm:"foreignkey:CampaignID" json:"maps"`
 }
 
@@ -56,6 +56,5 @@ type BaseMap struct {
 type Map struct {
 	gorm.Model
 	*BaseMap
-
-	CampaignID uint `json:"campaignId"`
+	CampaignID uint `json:"campaignId" sql:"type:integer REFERENCES campaigns(id)"`
 }

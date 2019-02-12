@@ -8,7 +8,7 @@ import (
 	"github.com/jrogozen/wargroovy/handlers/campaign"
 	"github.com/jrogozen/wargroovy/handlers/user"
 	"github.com/jrogozen/wargroovy/internal/config"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -34,6 +34,11 @@ func Routes(configuration *config.Config) *chi.Mux {
 func main() {
 	configuration, err := config.New()
 
+	// does this set for everything?
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
+
 	if err != nil {
 		log.Panicln("Error reading configuration", err)
 	}
@@ -41,14 +46,22 @@ func main() {
 	router := Routes(configuration)
 
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Printf("%s %s\n", method, route) // Walk and print out all routes
+		log.WithFields(log.Fields{
+			"method": method,
+			"route":  route,
+		}).Info("walking route")
+
 		return nil
 	}
 
 	if err := chi.Walk(router, walkFunc); err != nil {
-		log.Panicf("Logging err: %s\n", err.Error()) // panic if there is an error
+		log.Panicf("Logging err: %s\n", err.Error())
 	}
 
-	log.Println("Serving application at PORT: " + configuration.Constants.PORT)
+	log.WithFields(log.Fields{
+		"PORT":   configuration.Constants.PORT,
+		"DB_URI": configuration.Constants.DB_URI,
+	}).Info("Serving application")
+
 	log.Fatal(http.ListenAndServe(":"+configuration.Constants.PORT, router))
 }

@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/jrogozen/wargroovy/internal/conig"
+	"github.com/jrogozen/wargroovy/internal/config"
 	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
 	"golang.org/x/crypto/bcrypt"
@@ -25,6 +25,8 @@ func Create(configuration *config.Config, user *schema.User) map[string]interfac
 
 	// jwt
 	u.AttachToken(user)
+
+	user.Password = ""
 
 	response := u.Message(true, "User created")
 	response["user"] = user
