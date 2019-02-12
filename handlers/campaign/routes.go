@@ -11,11 +11,6 @@ func Routes(configuration *config.Config) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Group(func(router chi.Router) {
-		/* looks for tokens in this order:
-		'jwt' URI query parameter
-		'Authorization: BEARER T' request header
-		'jwt' Cookie value
-		*/
 		router.Use(jwtauth.Verifier(configuration.TokenAuth))
 		router.Use(u.Authenticator)
 
