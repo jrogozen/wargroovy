@@ -7,7 +7,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
 	"github.com/jrogozen/wargroovy/schema"
-	u "github.com/jrogozen/wargroovy/utils"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -39,6 +38,10 @@ func NewDB(dbUri string) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func InitJWT() *jwtauth.JWTAuth {
+	return jwtauth.New("HS256", []byte(os.Getenv("jwt_secret")), nil)
 }
 
 func New() (*Config, error) {
@@ -76,7 +79,7 @@ func New() (*Config, error) {
 
 	config.Database = db
 
-	config.TokenAuth = u.InitJWT()
+	config.TokenAuth = InitJWT()
 
 	Migrate(&config)
 

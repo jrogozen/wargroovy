@@ -24,7 +24,7 @@ func Create(configuration *config.Config, user *schema.User) map[string]interfac
 	}
 
 	// jwt
-	u.AttachToken(user)
+	u.AttachToken(configuration, user)
 
 	user.Password = ""
 

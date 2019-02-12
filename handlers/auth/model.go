@@ -35,7 +35,7 @@ func Login(configuration *config.Config, email string, password string) map[stri
 	user.Password = ""
 
 	// jwt
-	u.AttachToken(user)
+	u.AttachToken(configuration, user)
 
 	resp := u.Message(true, "Logged in")
 	resp["user"] = user

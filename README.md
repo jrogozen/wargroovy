@@ -39,11 +39,11 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 can think about separating http handlers and database actions into separate packages
 
 ### misc todo
-- [] either remove chi/jwtauth or jwt/go
+- [x] either remove chi/jwtauth or jwt/go
 - [x] split out handler code into multiple files per package (create, update, etc...)
 - [x] simplify nested conditionals in web response code (return a response?)
 - [x] set up level based logging. maybe [logrus](https://github.com/Sirupsen/logrus)
-- [] set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)
+- [] ~~set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)~~ temp use gorm.AutoMigrate
 - [] replace gorm with raw sql queries
 - [] jwt middleware should return json instead of 40x + text
 - [] finish protecting user actions with jwt
