@@ -1,0 +1,13 @@
+runtime: go111
+env: standard
+env_variables:
+  PORT: 8080
+  jwt_secret: Dnip44WoadZayKF6
+
+  # See https://godoc.org/github.com/lib/pq
+  POSTGRES_CONNECTION: "user=postgres password=3kEp30qJlcf7Itl1 dbname=postgres host=/cloudsql/wargroovy:us-central1:wargroovy-production"
+beta_settings:
+  cloud_sql_instances: wargroovy:us-central1:wargroovy-production
+handlers:
+- url: /.*
+  script: auto

@@ -12,8 +12,7 @@ import (
 )
 
 type Constants struct {
-	PORT   string
-	DB_URI string
+	PORT string
 }
 
 type Config struct {
@@ -23,64 +22,56 @@ type Config struct {
 }
 
 func Migrate(config *Config) {
-	log.Info("Migrating database.")
+	log.Info("Migrating database")
 
 	config.Database.AutoMigrate(&schema.User{})
 	config.Database.AutoMigrate(&schema.Campaign{})
 	config.Database.AutoMigrate(&schema.Map{})
 }
 
-func NewDB(dbUri string) (*gorm.DB, error) {
-	db, err := gorm.Open("postgres", dbUri)
+func DB() *gorm.DB {
+	var (
+		connectionString = os.Getenv("POSTGRES_CONNECTION")
+	)
+
+	log.Info(connectionString)
+
+	db, err := gorm.Open("postgres", connectionString)
 
 	if err != nil {
-		return nil, err
+		panic(fmt.Sprintf("DB: %v", err))
 	}
 
-	return db, nil
+	return db
 }
 
 func InitJWT() *jwtauth.JWTAuth {
 	return jwtauth.New("HS256", []byte(os.Getenv("jwt_secret")), nil)
 }
-
 func New() (*Config, error) {
 	config := Config{}
 
-	err := godotenv.Load()
+	// AppEngine instances won't be able to load this
+	err := godotenv.Load("../.env")
 
 	if err != nil {
-		log.Panicln("Error loading dotenv", err)
-
-		return &config, err
+		log.Warn("Error loading dotenv", err)
 	}
 
-	// get constants from dotEnv
-	port := os.Getenv("port")
-	dbName := os.Getenv("db_name")
-	dbHost := os.Getenv("db_host")
+	db := DB()
+	config.Database = db
 
-	dbUri := fmt.Sprintf("host=%s dbname=%s sslmode=disable", dbHost, dbName)
+	// constants setup
+	port := os.Getenv("PORT")
 
-	fmt.Println(dbUri)
-
-	constants := Constants{PORT: port, DB_URI: dbUri}
+	constants := Constants{PORT: port}
 
 	// attach to config struct
 	config.Constants = constants
 
-	db, err := NewDB(dbUri)
-
-	if err != nil {
-		log.Panicln("Error connecting to db", err)
-
-		return &config, err
-	}
-
-	config.Database = db
-
 	config.TokenAuth = InitJWT()
 
+	log.Info("migrating soon")
 	Migrate(&config)
 
 	return &config, err

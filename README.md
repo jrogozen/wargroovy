@@ -37,17 +37,18 @@ on frontend, user is asked if they'd like to save a campaign or a single map
 all maps must be attached to a campaign. UI is different for single vs multi-map campaigns
 
 ### deployment todo
-- [ ] set version of 3rd party packages
+- ~~[ ] set version of 3rd party packages~~
 - [ ] set up error monitoring (datadog, ...)
-- [ ] set up google sdk locally
-- [ ] set up gcloud project, enable google app engine (GAE)
-- [ ] deploy to GAE (docker (?) vs...)
-- [ ] connect GAE and domain
-- [ ] set up SSL
-- [ ] set up postgres on google cloud
-- [ ] set up env variable injection for GAE
+- [x] set up google sdk locally
+- [x] set up gcloud project, enable google app engine (GAE)
+- [x] deploy to GAE
+- ~~[ ] connect GAE and domain~~ probably wait on this. frontend and backend prob separate services
+- ~~[x] set up SSL~~
+- [x] set up postgres on google cloud
+- [x] set up env variable injection for GAE
 - [ ] continous integration (circle CI, drone, ...)
 - [ ] CI github hook (master push -> deploy)
+- [ ] best way to access cloud sql db
 
 ### MVP todo
 - [x] either remove chi/jwtauth or jwt/go

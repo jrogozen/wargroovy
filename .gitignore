@@ -1,3 +1,4 @@
 gin-bin
 .env
 vendor
+.DS_Store

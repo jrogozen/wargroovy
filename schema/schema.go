@@ -6,9 +6,12 @@ import (
 )
 
 type UserWithOutPassword struct {
-	*User
+	gorm.Model
 
-	Password string `json:"-"`
+	Email     string     `json:"email"`
+	Token     string     `json:"token" sql:"-"`
+	Campaigns []Campaign `gorm:"foreignkey:UserID" json:"campaigns"`
+	Password  string     `json:"-"`
 }
 
 type User struct {
