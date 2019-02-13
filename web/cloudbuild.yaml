@@ -1,7 +1,9 @@
-steps:
-- name: 'golang'
-  args: ['go', 'build', '.']
+# Build the module.
+- name: golang
   env: ['GO111MODULE=on']
+  args: ['go', 'build', './...']
+
 - name: "gcr.io/cloud-builders/gcloud"
   args: ["app", "deploy", "./web/app.yaml"]
+
 timeout: "1600s"
