@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/jrogozen/wargroovy/internal/config"
 	"github.com/jrogozen/wargroovy/schema"
@@ -10,7 +11,7 @@ import (
 
 func AttachToken(configuration *config.Config, user *schema.User) *schema.User {
 	admin := false
-	_, tokenString, _ := configuration.TokenAuth.Encode(&schema.TokenClaims{UserID: user.ID, Admin: admin})
+	_, tokenString, _ := configuration.TokenAuth.Encode(jwt.MapClaims{"UserID": user.ID, "Admin": admin})
 
 	log.WithFields(log.Fields{
 		"token":  tokenString,

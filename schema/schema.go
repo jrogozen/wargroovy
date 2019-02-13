@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
 )
 
@@ -21,13 +20,6 @@ type User struct {
 	Token     string     `json:"token" sql:"-"`
 	Password  string     `json:"password"`
 	Campaigns []Campaign `gorm:"foreignkey:UserID" json:"campaigns"`
-}
-
-type TokenClaims struct {
-	jwt.StandardClaims
-
-	UserID uint
-	Admin  bool
 }
 
 //BaseCampaign is safe to edit via API
