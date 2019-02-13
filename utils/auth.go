@@ -11,6 +11,7 @@ import (
 
 func AttachToken(configuration *config.Config, user *schema.User) *schema.User {
 	admin := false
+
 	_, tokenString, _ := configuration.TokenAuth.Encode(jwt.MapClaims{"UserID": user.ID, "Admin": admin})
 
 	log.WithFields(log.Fields{
