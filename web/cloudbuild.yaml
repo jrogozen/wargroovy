@@ -1,4 +1,6 @@
 steps:
 - name: "gcr.io/cloud-builders/gcloud"
+  args: ["go", "get"]
+- name: "gcr.io/cloud-builders/gcloud"
   args: ["app", "deploy", "./web/app.yaml"]
 timeout: "1600s"
