@@ -16,18 +16,26 @@ type SortOptions struct {
 }
 
 //Validate validates campaign fields for campaign creation
-func Validate(configuration *config.Config, campaign *schema.Campaign) (map[string]interface{}, bool) {
+func Validate(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign) (map[string]interface{}, bool) {
 	if campaign.UserID <= 0 {
 		return u.Message(false, "Campaigns need to be owned by a user"), false
+	}
+
+	if _, ok := u.IsUserAuthorized(campaign.UserID, claims); !ok {
+		return u.Message(false, "Can only create a campaign associated with valid userId"), false
 	}
 
 	return u.Message(true, "Valid"), true
 }
 
 //ValidateMap validates map fields for map creation
-func ValidateMap(configuration *config.Config, m *schema.Map) (map[string]interface{}, bool) {
+func ValidateMap(configuration *config.Config, claims map[string]interface{}, m *schema.Map, campaign *schema.Campaign) (map[string]interface{}, bool) {
 	if m.CampaignID <= 0 {
 		return u.Message(false, "Campaigns need to be owned by a user"), false
+	}
+
+	if _, ok := u.IsUserAuthorized(campaign.UserID, claims); !ok {
+		return u.Message(false, "Can only create a map when the campaign is associated with a valid userId"), false
 	}
 
 	if m.Name == "" {

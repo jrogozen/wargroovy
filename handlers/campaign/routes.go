@@ -17,7 +17,6 @@ func Routes(configuration *config.Config) *chi.Mux {
 		router.Post("/{campaignId}/map", CreateAMap(configuration))
 		router.Put("/{campaignId}/map/{mapId}", EditAMap(configuration))
 		router.Post("/", CreateACampaign(configuration))
-
 		router.Put("/{campaignId}", EditACampaign(configuration))
 
 	})

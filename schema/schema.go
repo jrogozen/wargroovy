@@ -41,6 +41,8 @@ type Campaign struct {
 
 //BaseMap is safe to edit via API
 type BaseMap struct {
+	gorm.Model
+
 	Name          string `json:"name"`
 	Description   string `json:"description"`
 	ThumbPhotoURL string `json:"thumbPhotoUrl"`
@@ -49,7 +51,6 @@ type BaseMap struct {
 }
 
 type Map struct {
-	gorm.Model
 	*BaseMap
 	CampaignID uint `json:"campaignId" sql:"type:integer REFERENCES campaigns(id)"`
 }

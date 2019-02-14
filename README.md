@@ -37,7 +37,7 @@ on frontend, user is asked if they'd like to save a campaign or a single map
 all maps must be attached to a campaign. UI is different for single vs multi-map campaigns
 
 ### deployment todo
-- [ ] ~~set version of 3rd party packages~~
+- [x] set version of 3rd party packages
 - [ ] set up error monitoring (datadog, ...)
 - [x] set up google sdk locally
 - [x] set up gcloud project, enable google app engine (GAE)
@@ -48,7 +48,7 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] set up env variable injection for GAE
 - [ ] ~~continous integration (circle CI, drone, ...)~~
 - [x] CI github hook (master push -> deploy)
-- [ ] best way to access cloud sql db
+- [x] best way to access cloud sql db. `gcloud sql connect wargroovy-production -u postgres`
 
 ### MVP todo
 - [x] either remove chi/jwtauth or jwt/go
@@ -56,10 +56,24 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] simplify nested conditionals in web response code (return a response?)
 - [x] set up level based logging. maybe [logrus](https://github.com/Sirupsen/logrus)
 - [x] jwt middleware should return json instead of 40x + text
-- [ ] finish protecting user actions with jwt
+- [x] finish protecting user actions with jwt
+- [ ] clean up models/controller interactions. models should return fully completed response :)
 
 ### future todo
-- [ ] replace gorm with raw sql queries
+- [ ] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
 - [ ] discord w/ deploy / error integrations
 - [ ] public issue repo on github
 - [ ] ~~set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)~~ temp use gorm.AutoMigrate
+
+### helpful commands
+
+#### connect to production sql
+`gcloud sql connect wargroovy-production -u postgres`
+
+#### deploy app
+`gcloud app deploy`
+
+### local dev
+`cd web && gin -p 3000 -a 8080 -t ../ -d . run main.go`
+
+runs the proxy on port 3000 (main app on 8080)

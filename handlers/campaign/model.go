@@ -6,16 +6,23 @@ import (
 	u "github.com/jrogozen/wargroovy/utils"
 )
 
-func UpdateCampaign(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign, updatedCampaign *schema.BaseCampaign) *schema.Campaign {
-	campaignUserID := campaign.UserID
-
-	if _, ok := u.IsUserAuthorized(campaignUserID, claims); !ok {
-		return nil
+func UpdateCampaign(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign, updatedCampaign *schema.BaseCampaign) map[string]interface{} {
+	if resp, ok := Validate(configuration, claims, campaign); !ok {
+		return resp
 	}
 
 	configuration.Database.Model(&campaign).Updates(&updatedCampaign)
 
-	return campaign
+	if campaign.ID <= 0 {
+		response := u.Message(false, "Campaign could not be created")
+
+		return response
+	}
+
+	response := u.Message(true, "Campaign updated")
+	response["campaign"] = campaign
+
+	return response
 }
 
 func FindMap(configuration *config.Config, id string) *schema.Map {
@@ -30,24 +37,27 @@ func FindMap(configuration *config.Config, id string) *schema.Map {
 	return m
 }
 
-func UpdateMap(configuration *config.Config, campaignId string, mapId string, updatedMap *schema.BaseMap) *schema.Map {
-	// find campaign to get userId so we can verify that this user can update this map
-	// once we implement jwt
-	campaign := FindCampaign(configuration, campaignId)
+func UpdateMap(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign, mapID string, updatedMap *schema.BaseMap) map[string]interface{} {
+	m := FindMap(configuration, mapID)
 
-	if campaign == nil {
-		return nil
+	if m == nil {
+		return u.Message(false, "Could not find map to update")
 	}
 
-	m := FindMap(configuration, mapId)
-
-	if m == nil || uint(m.CampaignID) != campaign.ID {
-		return nil
-	} else {
-		configuration.Database.Model(&m).Updates(&updatedMap)
-
-		return m
+	if campaign.ID != m.CampaignID {
+		return u.Message(false, "Map does not belong to given campaign")
 	}
+
+	if resp, ok := ValidateMap(configuration, claims, m, campaign); !ok {
+		return resp
+	}
+
+	configuration.Database.Model(&m).Updates(&updatedMap)
+
+	response := u.Message(true, "Map updated")
+	response["map"] = m
+
+	return response
 }
 
 func FindCampaign(configuration *config.Config, id string) *schema.Campaign {
@@ -62,15 +72,17 @@ func FindCampaign(configuration *config.Config, id string) *schema.Campaign {
 	return campaign
 }
 
-func Create(configuration *config.Config, campaign *schema.Campaign) map[string]interface{} {
-	if resp, ok := Validate(configuration, campaign); !ok {
+func Create(configuration *config.Config, claims map[string]interface{}, campaign *schema.Campaign) map[string]interface{} {
+	if resp, ok := Validate(configuration, claims, campaign); !ok {
 		return resp
 	}
 
 	configuration.Database.Create(campaign)
 
 	if campaign.ID <= 0 {
-		return nil
+		response := u.Message(false, "Campaign could not be created")
+
+		return response
 	}
 
 	response := u.Message(true, "Campaign created")
@@ -79,15 +91,17 @@ func Create(configuration *config.Config, campaign *schema.Campaign) map[string]
 	return response
 }
 
-func CreateMap(configuration *config.Config, m *schema.Map) map[string]interface{} {
-	if resp, ok := ValidateMap(configuration, m); !ok {
+func CreateMap(configuration *config.Config, claims map[string]interface{}, m *schema.Map, campaign *schema.Campaign) map[string]interface{} {
+	if resp, ok := ValidateMap(configuration, claims, m, campaign); !ok {
 		return resp
 	}
 
 	configuration.Database.Create(m)
 
 	if m.ID <= 0 {
-		return u.Message(false, "Failed to create map")
+		response := u.Message(false, "Failed to create map")
+
+		return response
 	}
 
 	response := u.Message(true, "Map created")
