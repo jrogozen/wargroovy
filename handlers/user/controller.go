@@ -11,7 +11,7 @@ import (
 
 func CreateAUser(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := &schema.User{}
+		user := &schema.CreateUser{}
 
 		// decode request body into user struct
 		err := render.DecodeJSON(r.Body, user)
@@ -30,17 +30,9 @@ func CreateAUser(configuration *config.Config) http.HandlerFunc {
 func GetAUser(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "userId")
-		user := FindUser(configuration, userID)
+		resp := FindUser(configuration, userID)
 
-		if user == nil {
-			u.Respond(w, r, u.Message(false, "Could not find user"))
-			return
-		}
-
-		response := u.Message(true, "User found")
-		response["user"] = user
-
-		u.Respond(w, r, response)
+		u.Respond(w, r, resp)
 		return
 	})
 }

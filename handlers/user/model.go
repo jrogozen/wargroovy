@@ -4,10 +4,12 @@ import (
 	"github.com/jrogozen/wargroovy/internal/config"
 	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
+	// log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
 )
 
-func Create(configuration *config.Config, user *schema.User) map[string]interface{} {
+func Create(configuration *config.Config, user *schema.CreateUser) map[string]interface{} {
 	if resp, ok := Validate(configuration, user); !ok {
 		return resp
 	}
@@ -16,36 +18,36 @@ func Create(configuration *config.Config, user *schema.User) map[string]interfac
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
 
-	// add to db
-	configuration.Database.Create(user)
+	insertedID, err := configuration.DB.AddUser(user)
 
-	if user.ID <= 0 {
-		return u.Message(false, "Failed to create user")
+	if err != nil || insertedID == 0 {
+		return u.Message(false, err.Error())
 	}
 
-	// jwt
-	u.AttachToken(configuration, user)
-
-	user.Password = ""
+	//TODO probably can move this into the db package
+	createdUser := &schema.CreatedUser{
+		ID:       insertedID,
+		Email:    user.Email,
+		Username: user.Username,
+		Token:    u.GetToken(configuration, insertedID),
+	}
 
 	response := u.Message(true, "User created")
-	response["user"] = user
+	response["user"] = createdUser
 
 	return response
 }
 
-func FindUser(configuration *config.Config, id string) *schema.UserWithOutPassword {
-	user := &schema.UserWithOutPassword{}
+func FindUser(configuration *config.Config, userIdString string) map[string]interface{} {
+	userID, _ := strconv.ParseInt(userIdString, 10, 64)
+	user, err := configuration.DB.GetUser(userID)
 
-	configuration.Database.
-		Preload("Campaigns").
-		Table("users").
-		Where("id = ?", id).
-		First(user)
-
-	if user.Email == "" {
-		return nil
+	if err != nil {
+		return u.Message(false, err.Error())
 	}
 
-	return user
+	response := u.Message(true, "User found")
+	response["user"] = user
+
+	return response
 }

@@ -1,14 +1,16 @@
 package config
 
 import (
+	"bitbucket.org/liamstask/goose/lib/goose"
 	"fmt"
 	"github.com/go-chi/jwtauth"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
-	"github.com/jrogozen/wargroovy/schema"
+	"github.com/jrogozen/wargroovy/db"
+	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+
 	"os"
+	"path/filepath"
 )
 
 type Constants struct {
@@ -17,32 +19,54 @@ type Constants struct {
 
 type Config struct {
 	Constants
-	Database  *gorm.DB
+	DB        *db.PsqlDB
 	TokenAuth *jwtauth.JWTAuth
 }
 
 func Migrate(config *Config) {
 	log.Info("Migrating database")
 
-	config.Database.AutoMigrate(&schema.User{})
-	config.Database.AutoMigrate(&schema.Campaign{})
-	config.Database.AutoMigrate(&schema.Map{})
+	p, _ := filepath.Abs("../db/migrations")
+
+	migrateConf := &goose.DBConf{
+		MigrationsDir: p,
+		Env:           "development",
+		Driver: goose.DBDriver{
+			Name:    "postgres",
+			OpenStr: os.Getenv("POSTGRES_CONNECTION"),
+			Import:  "https://github.com/lib/pq",
+			Dialect: &goose.PostgresDialect{},
+		},
+	}
+
+	// Get the latest possible migration
+	latest, err := goose.GetMostRecentDBVersion(migrateConf.MigrationsDir)
+
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	err = goose.RunMigrationsOnDb(migrateConf, migrateConf.MigrationsDir, latest, config.DB.Conn)
+
+	if err != nil {
+		log.Error(err)
+		return
+	}
 }
 
-func DB() *gorm.DB {
+func MakeDB() *db.PsqlDB {
 	var (
 		connectionString = os.Getenv("POSTGRES_CONNECTION")
 	)
 
-	log.Info(connectionString)
-
-	db, err := gorm.Open("postgres", connectionString)
+	psqlDB, err := db.NewPostgresDB(connectionString)
 
 	if err != nil {
-		panic(fmt.Sprintf("DB: %v", err))
+		panic(fmt.Errorf("DB: %v", err))
 	}
 
-	return db
+	return psqlDB
 }
 
 func InitJWT() *jwtauth.JWTAuth {
@@ -58,8 +82,8 @@ func New() (*Config, error) {
 		log.Warn("Error loading dotenv", err)
 	}
 
-	db := DB()
-	config.Database = db
+	db := MakeDB()
+	config.DB = db
 
 	// constants setup
 	port := os.Getenv("PORT")
@@ -71,7 +95,6 @@ func New() (*Config, error) {
 
 	config.TokenAuth = InitJWT()
 
-	log.Info("migrating soon")
 	Migrate(&config)
 
 	return &config, err

@@ -4,31 +4,29 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/jrogozen/wargroovy/internal/config"
-	"github.com/jrogozen/wargroovy/schema"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"reflect"
 )
 
-func AttachToken(configuration *config.Config, user *schema.User) *schema.User {
+func GetToken(configuration *config.Config, userID int64) string {
 	admin := false
 
-	_, tokenString, _ := configuration.TokenAuth.Encode(jwt.MapClaims{"UserID": user.ID, "Admin": admin})
+	_, tokenString, _ := configuration.TokenAuth.Encode(jwt.MapClaims{"UserID": userID, "Admin": admin})
 
 	log.WithFields(log.Fields{
 		"token":  tokenString,
-		"userId": user.ID,
+		"userId": userID,
 		"admin":  admin,
-	}).Trace("Generated token for user")
+	}).Info("Generated token for user")
 
-	user.Token = tokenString
-
-	return user
+	return tokenString
 }
 
-func IsUserAuthorized(attemptedUserID uint, claims map[string]interface{}) (map[string]interface{}, bool) {
-	actualUserID := claims["UserID"].(float64)
+func IsUserAuthorized(attemptedUserID int64, claims map[string]interface{}) (map[string]interface{}, bool) {
+	actualUserID := int64(claims["UserID"].(float64))
 
-	if uint(actualUserID) != attemptedUserID {
+	if actualUserID != attemptedUserID {
 		return Message(false, "Mismatched token userId and requestId"), false
 	}
 

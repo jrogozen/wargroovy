@@ -1,0 +1,7 @@
+development:
+  driver: postgres
+  open: user=postgres dbname=wargroovy sslmode=disable
+  
+production:
+  driver: postgres
+  open: user=postgres password=3kEp30qJlcf7Itl1 dbname=postgres host=/cloudsql/wargroovy:us-central1:wargroovy-production

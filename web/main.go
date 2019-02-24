@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/jrogozen/wargroovy/handlers/auth"
-	"github.com/jrogozen/wargroovy/handlers/campaign"
+	"github.com/jrogozen/wargroovy/handlers/maps"
 	"github.com/jrogozen/wargroovy/handlers/user"
 	"github.com/jrogozen/wargroovy/internal/config"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +25,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 
 	router.Route("/v1/api", func(r chi.Router) {
 		r.Mount("/user", user.Routes(configuration))
-		r.Mount("/campaign", campaign.Routes(configuration))
+		r.Mount("/map", maps.Routes(configuration))
 		r.Mount("/auth", auth.Routes(configuration))
 	})
 

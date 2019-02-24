@@ -1,4 +1,4 @@
-package campaign
+package maps
 
 import (
 	"github.com/go-chi/chi"
@@ -14,16 +14,14 @@ func Routes(configuration *config.Config) *chi.Mux {
 		router.Use(jwtauth.Verifier(configuration.TokenAuth))
 		router.Use(u.Authenticator)
 
-		router.Post("/{campaignId}/map", CreateAMap(configuration))
-		router.Put("/{campaignId}/map/{mapId}", EditAMap(configuration))
-		router.Post("/", CreateACampaign(configuration))
-		router.Put("/{campaignId}", EditACampaign(configuration))
+		router.Post("/", CreateAMap(configuration))
+		// router.Put("/{mapId}", EditAMap(configuration))
 
 	})
 
 	router.Group(func(router chi.Router) {
-		router.Get("/{campaignId}", GetACampaign(configuration))
-		router.Get("/list", GetCampaignsList(configuration))
+		// router.Get("/{mapId}", GetAMap(configuration))
+		// router.Get("/list", GetMapList(configuration))
 
 	})
 

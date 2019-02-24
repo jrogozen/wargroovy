@@ -1,56 +1,82 @@
 package schema
 
-import (
-	"github.com/jinzhu/gorm"
-)
-
 type UserWithOutPassword struct {
-	gorm.Model
-
-	Email     string     `json:"email"`
-	Token     string     `json:"token" sql:"-"`
-	Campaigns []Campaign `gorm:"foreignkey:UserID" json:"campaigns"`
-	Password  string     `json:"-"`
+	Email    string `json:"-"`
+	Username string `json:"username"`
+	Token    string `json:"token" sql:"-"`
+	Maps     []Map  `gorm:"foreignkey:UserID" json:"maps"`
+	Password string `json:"-"`
 }
 
+//User not safe to return ever. corresponds to every row in table
+// used when fetching from DB
 type User struct {
-	gorm.Model
-
-	Email     string     `json:"email"`
-	Token     string     `json:"token" sql:"-"`
-	Password  string     `json:"password"`
-	Campaigns []Campaign `gorm:"foreignkey:UserID" json:"campaigns"`
+	ID        int64
+	CreatedAt int
+	UpdatedAt int
+	Email     string
+	Username  string
+	Password  string
+	Token     string `json:"token"`
 }
 
-//BaseCampaign is safe to edit via API
-type BaseCampaign struct {
-	Name              string `json:"name"`
-	Description       string `json:"description"`
-	ThumbPhotoURL     string `json:"thumbPhotoUrl"`
-	LargePhotoURL     string `json:"largePhotoUrl"`
-	SingleMapCampaign bool   `gorm:"DEFAULT:true" json:"singleMapCampaign"`
+//CreateUser what to accept to create a user
+type CreateUser struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-type Campaign struct {
-	gorm.Model
-	*BaseCampaign
-	UserID uint  `json:"userId" sql:"type:integer REFERENCES users(id)"`
-	Views  int   `json:"views" gorm:"DEFAULT:0"`
-	Maps   []Map `gorm:"foreignkey:CampaignID" json:"maps"`
+//CreatedUser user struct to send back in create/login flows
+type CreatedUser struct {
+	ID       int64  `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Token    string `json:"token"`
 }
 
-//BaseMap is safe to edit via API
-type BaseMap struct {
-	gorm.Model
-
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	ThumbPhotoURL string `json:"thumbPhotoUrl"`
-	LargePhotoURL string `json:"largePhotoUrl"`
-	DownloadCode  string `json:"downloadCode"`
+//UserView user struct when a user queries herself
+type UserView struct {
+	ID       int64  `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
+type SecureUserView struct {
+	ID        int64  `json:"ID"`
+	CreatedAt int    `json:"createdAt"`
+	UpdatedAt int    `json:"updatedAt"`
+	Email     string `json:"email"`
+	Username  string `json:"username"`
+	Token     string `json:"token"`
+}
+
+// //BaseMap is safe to edit via API
+// type BaseMap struct {
+// 	Name         string     `json:"name"`
+// 	Description  string     `json:"description"`
+// 	DownloadCode string     `json:"downloadCode"`
+// 	Type         string     `json:"type"`
+// 	Photos       []MapPhoto `json:"photos"`
+// }
+
+type MapPhoto struct {
+	ID    int64  `json:"id"`
+	MapID int64  `json:"map_id"`
+	URL   string `json:"url"`
+}
+
+//Map not safe to return ever. corresponds to every row in table
+// used when fetching from DB
 type Map struct {
-	*BaseMap
-	CampaignID uint `json:"campaignId" sql:"type:integer REFERENCES campaigns(id)"`
+	ID           int64    `json:"id"`
+	CreatedAt    int      `json:"created_at"`
+	UpdatedAt    int      `json:"updated_at"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	DownloadCode string   `json:"downloadCode"`
+	Type         string   `json:"type"`
+	UserID       int64    `json:"userId" sql:"type:integer REFERENCES users(id)"`
+	Views        int      `json:"views"`
+	Photos       []string `json:"photos"`
 }

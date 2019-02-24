@@ -58,12 +58,26 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] jwt middleware should return json instead of 40x + text
 - [x] finish protecting user actions with jwt
 - [ ] clean up models/controller interactions. models should return fully completed response :)
+- [ ] search db for campaigns based on title (relating to url slug)
+- [x] combine maps + campaigns
+- [x] add to campaign: download code, type
+- [ ] encode descriptions, make work with draft-js data structure
+- [x] do not return user email
+- [x] add to user: name
+- [ ] FILTER posts data
+- [x] change photos to separate table
+- [ ] upload photos api
+- [ ] can create user without username AND email (but fail if only one supplied not two)
 
 ### future todo
 - [ ] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
 - [ ] discord w/ deploy / error integrations
 - [ ] public issue repo on github
 - [ ] ~~set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)~~ temp use gorm.AutoMigrate
+- [ ] image pipeline to create thumbnails and upload images to gloud bucket
+- [ ] ML model to flag images that are not associated with wargroove
+- [ ] add map comments
+- [ ] add map ratings
 
 ### helpful commands
 
