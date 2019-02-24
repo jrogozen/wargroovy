@@ -68,6 +68,7 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] change photos to separate table
 - [ ] upload photos api
 - [ ] can create user without username AND email (but fail if only one supplied not two)
+- [ ] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
 
 ### future todo
 - [ ] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)

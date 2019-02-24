@@ -6,7 +6,6 @@ import (
 	"github.com/jrogozen/wargroovy/internal/config"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"reflect"
 )
 
 func GetToken(configuration *config.Config, userID int64) string {

@@ -20,7 +20,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 	})
 
 	router.Group(func(router chi.Router) {
-		// router.Get("/{mapId}", GetAMap(configuration))
+		router.Get("/{mapId}", GetAMap(configuration))
 		// router.Get("/list", GetMapList(configuration))
 
 	})

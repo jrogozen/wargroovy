@@ -1,7 +1,7 @@
 package maps
 
 import (
-	// "github.com/go-chi/chi"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/jrogozen/wargroovy/internal/config"
@@ -40,23 +40,16 @@ func CreateAMap(configuration *config.Config) http.HandlerFunc {
 	})
 }
 
-// func GetAMap(configuration *config.Config) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		mapID := chi.URLParam(r, "mapId")
-// 		m := FindMap(configuration, mapID)
+func GetAMap(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mapID := chi.URLParam(r, "mapId")
+		response := FindMap(configuration, mapID)
 
-// 		IncrementMapView(configuration, *m)
+		u.Respond(w, r, response)
 
-// 		if m == nil {
-// 			u.Respond(w, r, u.Message(false, "Could not find map"))
-// 		} else {
-// 			response := u.Message(true, "Map found")
-// 			response["map"] = m
-
-// 			u.Respond(w, r, response)
-// 		}
-// 	})
-// }
+		return
+	})
+}
 
 // func GetMapList(configuration *config.Config) http.HandlerFunc {
 // 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

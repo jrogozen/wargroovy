@@ -5,6 +5,7 @@ import (
 	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 )
 
 // func UpdateMap(configuration *config.Config, claims map[string]interface{}, m *schema.Map, updatedMap *schema.BaseMap) map[string]interface{} {
@@ -26,21 +27,20 @@ import (
 // 	return response
 // }
 
-// func FindMap(configuration *config.Config, id string) *schema.Map {
-// 	m := &schema.Map{}
+func FindMap(configuration *config.Config, mapIdString string) map[string]interface{} {
+	mapID, _ := strconv.ParseInt(mapIdString, 10, 64)
+	m, err := configuration.DB.GetMap(mapID)
 
-// 	configuration.Database.
-// 		Preload("Photos").
-// 		Table("maps").
-// 		Where("id = ?", id).
-// 		First(m)
+	if err != nil {
+		return u.Message(false, err.Error())
+	}
 
-// 	if m.ID == 0 {
-// 		return nil
-// 	}
+	response := u.Message(true, "Map found")
+	response["map"] = m
 
-// 	return m
-// }
+	return response
+
+}
 
 func Create(configuration *config.Config, claims map[string]interface{}, m *schema.Map) map[string]interface{} {
 	if resp, ok := Validate(configuration, claims, m); !ok {

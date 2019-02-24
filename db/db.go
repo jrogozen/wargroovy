@@ -30,8 +30,9 @@ type userSQL struct {
 type mapSQL struct {
 	insert       *sql.Stmt
 	insertPhotos *sql.Stmt
+	get          *sql.Stmt
+	getPhotos    *sql.Stmt
 
-	// get    *sql.Stmt
 	// list   *sql.Stmt
 	// listBy *sql.Stmt
 	// update *sql.Stmt
@@ -62,6 +63,8 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 
 	var mapInsert *sql.Stmt
 	var mapPhotosInsert *sql.Stmt
+	var mapGet *sql.Stmt
+	var mapPhotosGet *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -80,7 +83,15 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	}
 
 	if mapPhotosInsert, err = db.Conn.Prepare(insertMapPhotosStatement); err != nil {
-		return nil, fmt.Errorf("psql: prepare map ohots insert: %v", err)
+		return nil, fmt.Errorf("psql: prepare map photos insert: %v", err)
+	}
+
+	if mapGet, err = db.Conn.Prepare(getMapStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare map get: %v", err)
+	}
+
+	if mapPhotosGet, err = db.Conn.Prepare(getMapPhotosStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare map photos get: %v", err)
 	}
 
 	db.users.insert = userInsert
@@ -89,6 +100,8 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 
 	db.maps.insert = mapInsert
 	db.maps.insertPhotos = mapPhotosInsert
+	db.maps.get = mapGet
+	db.maps.getPhotos = mapPhotosGet
 
 	return db, nil
 }
@@ -213,6 +226,45 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	return insertedID, nil
 }
 
+const getMapStatement = "SELECT * from maps WHERE id = $1"
+const getMapPhotosStatement = "SELECT url from map_photos WHERE map_id = $1"
+
+func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
+	m, err := scanMap(db.maps.get.QueryRow(id))
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("psql: could not find map with id %d", id)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("psql: could not get map: %v", err)
+	}
+
+	rows, err := db.maps.getPhotos.Query(id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var photos []string
+
+	for rows.Next() {
+		photo, err := scanPhoto(rows)
+
+		if err != nil {
+			return nil, fmt.Errorf("psql: could not read row: %v", err)
+		}
+
+		photos = append(photos, photo)
+	}
+
+	m.Photos = photos
+
+	return m, nil
+}
+
 type rowScanner interface {
 	Scan(dest ...interface{}) error
 }
@@ -241,6 +293,50 @@ func scanUser(s rowScanner) (*schema.User, error) {
 	}
 
 	return user, nil
+}
+
+func scanMap(s rowScanner) (*schema.Map, error) {
+	var (
+		id           int64
+		createdAt    int
+		updatedAt    int
+		name         string
+		description  string
+		downloadCode string
+		Type         string
+		userID       int64
+		views        int
+	)
+
+	if err := s.Scan(&id, &createdAt, &updatedAt, &name, &description, &downloadCode, &Type, &userID, &views); err != nil {
+		return nil, err
+	}
+
+	m := &schema.Map{
+		ID:           id,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
+		Name:         name,
+		Description:  description,
+		DownloadCode: downloadCode,
+		Type:         Type,
+		UserID:       userID,
+		Views:        views,
+	}
+
+	return m, nil
+}
+
+func scanPhoto(s rowScanner) (string, error) {
+	var (
+		url string
+	)
+
+	if err := s.Scan(&url); err != nil {
+		return "", err
+	}
+
+	return url, nil
 }
 
 func QueryRow(stmt *sql.Stmt, args ...interface{}) *sql.Row {
