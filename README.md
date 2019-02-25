@@ -61,18 +61,18 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [ ] search db for maps based on title (relating to url slug)
 - [x] combine maps + campaigns
 - [x] add to campaign: download code, type
-- [ ] encode descriptions, make work with draft-js data structure
+- [ ] make work with draft-js data structure
 - [x] do not return user email
 - [x] add to user: name
-- [ ] XSS? FILTER posts data
 - [x] change photos to separate table
-- [ ] upload photos api
+- [x] upload photos route
 - [ ] can create user without username AND email (but fail if only one supplied not two)
 - [x] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
 - [ ] edit/delete map photos
 - [ ] delete map
 - [ ] edit user
 - [ ] delete user
+- [ ] jwt set as cookie in response
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)

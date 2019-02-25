@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/jrogozen/wargroovy/handlers/auth"
 	"github.com/jrogozen/wargroovy/handlers/maps"
+	"github.com/jrogozen/wargroovy/handlers/photos"
 	"github.com/jrogozen/wargroovy/handlers/user"
 	"github.com/jrogozen/wargroovy/internal/config"
 	log "github.com/sirupsen/logrus"
@@ -27,6 +28,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 		r.Mount("/user", user.Routes(configuration))
 		r.Mount("/map", maps.Routes(configuration))
 		r.Mount("/auth", auth.Routes(configuration))
+		r.Mount("/photo", photos.Routes(configuration))
 	})
 
 	router.Route("/", func(r chi.Router) {

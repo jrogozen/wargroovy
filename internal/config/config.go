@@ -2,25 +2,28 @@ package config
 
 import (
 	"bitbucket.org/liamstask/goose/lib/goose"
+	"cloud.google.com/go/storage"
+	"context"
 	"fmt"
 	"github.com/go-chi/jwtauth"
 	"github.com/joho/godotenv"
 	"github.com/jrogozen/wargroovy/db"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
-
 	"os"
 	"path/filepath"
 )
 
 type Constants struct {
-	PORT string
+	PORT              string
+	StorageBucketName string
 }
 
 type Config struct {
 	Constants
-	DB        *db.PsqlDB
-	TokenAuth *jwtauth.JWTAuth
+	DB            *db.PsqlDB
+	TokenAuth     *jwtauth.JWTAuth
+	StorageBucket *storage.BucketHandle
 }
 
 func Migrate(config *Config) {
@@ -72,6 +75,18 @@ func MakeDB() *db.PsqlDB {
 func InitJWT() *jwtauth.JWTAuth {
 	return jwtauth.New("HS256", []byte(os.Getenv("jwt_secret")), nil)
 }
+
+func configureStorage(bucketID string) (*storage.BucketHandle, error) {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Bucket(bucketID), nil
+}
+
 func New() (*Config, error) {
 	config := Config{}
 
@@ -96,6 +111,18 @@ func New() (*Config, error) {
 	config.TokenAuth = InitJWT()
 
 	Migrate(&config)
+
+	StorageBucketName := os.Getenv("STORAGE_BUCKET_NAME")
+	StorageBucket, err := configureStorage(StorageBucketName)
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Could not connect to storage bucket!")
+	}
+
+	config.Constants.StorageBucketName = StorageBucketName
+	config.StorageBucket = StorageBucket
 
 	return &config, err
 }

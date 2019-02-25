@@ -6,6 +6,8 @@ env_variables:
 
   # See https://godoc.org/github.com/lib/pq
   POSTGRES_CONNECTION: "user=postgres password=3kEp30qJlcf7Itl1 dbname=postgres host=/cloudsql/wargroovy:us-central1:wargroovy-production"
+
+  STORAGE_BUCKET_NAME: "wargroovy.appspot.com"
 beta_settings:
   cloud_sql_instances: wargroovy:us-central1:wargroovy-production
 handlers:
