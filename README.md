@@ -7,7 +7,7 @@
 
 #### /user
 - [x] - POST /user
-- [X] - GET /user/{userId}
+- [X] - GET /user (uses jwt for auth)
 
 #### /campaign
 - [x] - POST /campaign
@@ -68,7 +68,7 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] change photos to separate table
 - [ ] upload photos api
 - [ ] can create user without username AND email (but fail if only one supplied not two)
-- [ ] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
+- [x] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
 - [ ] edit/delete map photos
 - [ ] delete map
 - [ ] edit user
@@ -79,7 +79,7 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [ ] discord w/ deploy / error integrations
 - [ ] public issue repo on github
 - [ ] ~~set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)~~ temp use gorm.AutoMigrate
-- [ ] image pipeline to create thumbnails and upload images to gloud bucket
+- ~~[ ] image pipeline to create thumbnails and upload images to gloud bucket~~
 - [ ] ML model to flag images that are not associated with wargroove
 - [ ] add map comments
 - [ ] add map ratings

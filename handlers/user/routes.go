@@ -13,12 +13,11 @@ func Routes(configuration *config.Config) *chi.Mux {
 	router.Group(func(router chi.Router) {
 		router.Use(jwtauth.Verifier(configuration.TokenAuth))
 		router.Use(u.Authenticator)
-
+		router.Get("/", GetAUser(configuration))
 	})
 
 	router.Group(func(router chi.Router) {
 		router.Post("/", CreateAUser(configuration))
-		router.Get("/{userId}", GetAUser(configuration))
 	})
 
 	return router
