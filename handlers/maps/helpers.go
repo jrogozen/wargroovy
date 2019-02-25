@@ -8,13 +8,6 @@ import (
 	"strconv"
 )
 
-//SortOptions used by FindCampaignList
-type SortOptions struct {
-	limit   int
-	offset  int
-	orderBy string
-}
-
 //Validate validates campaign fields for campaign creation
 func Validate(configuration *config.Config, claims map[string]interface{}, m *schema.Map) (map[string]interface{}, bool) {
 	if m.UserID <= 0 {
@@ -28,19 +21,27 @@ func Validate(configuration *config.Config, claims map[string]interface{}, m *sc
 	return u.Message(true, "Valid"), true
 }
 
+func ValidateUpdate(configuration *config.Config, claims map[string]interface{}, m *schema.Map) (map[string]interface{}, bool) {
+	if _, ok := u.IsUserAuthorized(m.UserID, claims); !ok {
+		return u.Message(false, "Can only create a map associated with valid userId"), false
+	}
+
+	return u.Message(true, "Valid"), true
+}
+
 //GetSortOptions parse queryParams and return correctly typed SortOptions
-func GetSortOptions(r *http.Request) *SortOptions {
-	options := &SortOptions{}
+func GetSortOptions(r *http.Request) *schema.SortOptions {
+	options := &schema.SortOptions{}
 
 	limit := u.StringWithDefault(r.URL.Query().Get("limit"), "20")
-	offset := u.StringWithDefault(r.URL.Query().Get("offset"), "-1")
+	offset := u.StringWithDefault(r.URL.Query().Get("offset"), "0")
 	orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "created_descending")
 
 	limitInt, _ := strconv.Atoi(limit)
 	offsetInt, _ := strconv.Atoi(offset)
 
-	options.limit = limitInt
-	options.offset = offsetInt
+	options.Limit = limitInt
+	options.Offset = offsetInt
 
 	orderQueryString := ""
 
@@ -61,7 +62,7 @@ func GetSortOptions(r *http.Request) *SortOptions {
 		orderQueryString = "created_at desc"
 	}
 
-	options.orderBy = orderQueryString
+	options.OrderBy = orderQueryString
 
 	return options
 }

@@ -51,48 +51,40 @@ func GetAMap(configuration *config.Config) http.HandlerFunc {
 	})
 }
 
-// func GetMapList(configuration *config.Config) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		sortOptions := GetSortOptions(r)
-// 		maps := FindMapList(configuration, sortOptions)
+func GetMapList(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sortOptions := GetSortOptions(r)
+		response := FindMapList(configuration, sortOptions)
 
-// 		response := u.Message(true, "Maps found")
-// 		response["maps"] = maps
+		u.Respond(w, r, response)
 
-// 		u.Respond(w, r, response)
-// 	})
-// }
+		return
+	})
+}
 
-// func EditAMap(configuration *config.Config) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		mapID := chi.URLParam(r, "mapId")
-// 		mapUpdate := &schema.BaseMap{}
+func EditAMap(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mapIdString := chi.URLParam(r, "mapId")
+		mapUpdate := &schema.Map{}
 
-// 		// requires jwt-auth middleware to be used in part of the router stack
-// 		_, claims, err := jwtauth.FromContext(r.Context())
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, err := jwtauth.FromContext(r.Context())
 
-// 		if err != nil {
-// 			u.Respond(w, r, u.Message(false, "Error authorizing user"))
-// 			return
-// 		}
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error authorizing user"))
+			return
+		}
 
-// 		err = render.DecodeJSON(r.Body, mapUpdate)
+		err = render.DecodeJSON(r.Body, mapUpdate)
 
-// 		if err != nil {
-// 			u.Respond(w, r, u.Message(false, "Error updating map"))
-// 			return
-// 		}
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error updating map"))
+			return
+		}
 
-// 		originalMap := FindMap(configuration, mapID)
+		resp := UpdateMap(configuration, claims, mapIdString, mapUpdate)
 
-// 		if originalMap == nil {
-// 			u.Respond(w, r, u.Message(false, "Could not find map"))
-// 			return
-// 		}
-
-// 		resp := UpdateMap(configuration, claims, originalMap, mapUpdate)
-
-// 		u.Respond(w, r, resp)
-// 		return
-// 	})
-// }
+		u.Respond(w, r, resp)
+		return
+	})
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/jrogozen/wargroovy/schema"
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -32,10 +33,8 @@ type mapSQL struct {
 	insertPhotos *sql.Stmt
 	get          *sql.Stmt
 	getPhotos    *sql.Stmt
-
-	// list   *sql.Stmt
-	// listBy *sql.Stmt
-	// update *sql.Stmt
+	listBy       *sql.Stmt
+	update       *sql.Stmt
 }
 
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
@@ -64,7 +63,8 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapInsert *sql.Stmt
 	var mapPhotosInsert *sql.Stmt
 	var mapGet *sql.Stmt
-	var mapPhotosGet *sql.Stmt
+	var mapListBy *sql.Stmt
+	var mapUpdate *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -90,8 +90,12 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare map get: %v", err)
 	}
 
-	if mapPhotosGet, err = db.Conn.Prepare(getMapPhotosStatement); err != nil {
-		return nil, fmt.Errorf("psql: prepare map photos get: %v", err)
+	if mapListBy, err = db.Conn.Prepare(listByMapStatement); err != nil {
+		return nil, fmt.Errorf("psql: listBy map statement: %v", err)
+	}
+
+	if mapUpdate, err = db.Conn.Prepare(updateMapStatement); err != nil {
+		return nil, fmt.Errorf("psql: update map: %v", err)
 	}
 
 	db.users.insert = userInsert
@@ -101,7 +105,8 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.insert = mapInsert
 	db.maps.insertPhotos = mapPhotosInsert
 	db.maps.get = mapGet
-	db.maps.getPhotos = mapPhotosGet
+	db.maps.listBy = mapListBy
+	db.maps.update = mapUpdate
 
 	return db, nil
 }
@@ -226,8 +231,15 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	return insertedID, nil
 }
 
-const getMapStatement = "SELECT * from maps WHERE id = $1"
-const getMapPhotosStatement = "SELECT url from map_photos WHERE map_id = $1"
+const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, photos
+FROM maps m
+left join (
+	select map_id, string_agg(url, ',') AS photos
+	from map_photos
+	GROUP BY map_id
+) p ON m.id = map_id
+WHERE id = $1
+`
 
 func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 	m, err := scanMap(db.maps.get.QueryRow(id))
@@ -240,7 +252,23 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 		return nil, fmt.Errorf("psql: could not get map: %v", err)
 	}
 
-	rows, err := db.maps.getPhotos.Query(id)
+	return m, nil
+}
+
+const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, photos
+	from maps m
+	left join (
+		select map_id, string_agg(url, ',') AS photos
+		from map_photos
+		GROUP BY map_id
+	) p ON m.id = map_id
+	order by $1
+	limit $2
+	offset $3
+`
+
+func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) {
+	rows, err := db.maps.listBy.Query(options.OrderBy, options.Limit, options.Offset)
 
 	if err != nil {
 		return nil, err
@@ -248,21 +276,48 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 
 	defer rows.Close()
 
-	var photos []string
+	var maps []*schema.Map
 
 	for rows.Next() {
-		photo, err := scanPhoto(rows)
+		m, err := scanMap(rows)
 
 		if err != nil {
 			return nil, fmt.Errorf("psql: could not read row: %v", err)
 		}
 
-		photos = append(photos, photo)
+		log.WithFields(log.Fields{
+			"map": m,
+		}).Info("appending map")
+
+		maps = append(maps, m)
 	}
 
-	m.Photos = photos
+	return maps, nil
+}
 
-	return m, nil
+const updateMapStatement = `UPDATE maps
+	SET updated_at = $1, name = $2, description = $3, download_code = $4, type = $5
+	WHERE id = $6
+	RETURNING id
+`
+
+func (db *PsqlDB) UpdateMap(m *schema.Map) (int64, error) {
+	if m.ID == 0 {
+		return 0, errors.New("psql: cannot update map with unassigned ID")
+	}
+
+	now := time.Now().UnixNano()
+
+	var updatedID int64
+
+	err := QueryRow(db.maps.update, now, m.Name, m.Description, m.DownloadCode, m.Type, m.ID).
+		Scan(&updatedID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return updatedID, nil
 }
 
 type rowScanner interface {
@@ -306,10 +361,30 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Type         string
 		userID       int64
 		views        int
+		photos       sql.NullString
 	)
 
-	if err := s.Scan(&id, &createdAt, &updatedAt, &name, &description, &downloadCode, &Type, &userID, &views); err != nil {
+	if err := s.Scan(
+		&id,
+		&createdAt,
+		&updatedAt,
+		&name,
+		&description,
+		&downloadCode,
+		&Type,
+		&userID,
+		&views,
+		&photos,
+	); err != nil {
 		return nil, err
+	}
+
+	var photosArray []string
+
+	if photos.Valid {
+		photosArray = strings.Split(photos.String, ",")
+	} else {
+		photosArray = make([]string, 0)
 	}
 
 	m := &schema.Map{
@@ -322,6 +397,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Type:         Type,
 		UserID:       userID,
 		Views:        views,
+		Photos:       photosArray,
 	}
 
 	return m, nil

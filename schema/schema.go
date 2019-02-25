@@ -1,13 +1,5 @@
 package schema
 
-type UserWithOutPassword struct {
-	Email    string `json:"-"`
-	Username string `json:"username"`
-	Token    string `json:"token" sql:"-"`
-	Maps     []Map  `gorm:"foreignkey:UserID" json:"maps"`
-	Password string `json:"-"`
-}
-
 //User not safe to return ever. corresponds to every row in table
 // used when fetching from DB
 type User struct {
@@ -51,15 +43,6 @@ type SecureUserView struct {
 	Token     string `json:"token"`
 }
 
-// //BaseMap is safe to edit via API
-// type BaseMap struct {
-// 	Name         string     `json:"name"`
-// 	Description  string     `json:"description"`
-// 	DownloadCode string     `json:"downloadCode"`
-// 	Type         string     `json:"type"`
-// 	Photos       []MapPhoto `json:"photos"`
-// }
-
 type MapPhoto struct {
 	ID    int64  `json:"id"`
 	MapID int64  `json:"map_id"`
@@ -79,4 +62,42 @@ type Map struct {
 	UserID       int64    `json:"userId" sql:"type:integer REFERENCES users(id)"`
 	Views        int      `json:"views"`
 	Photos       []string `json:"photos"`
+}
+
+func (m *Map) Merge(u *Map) {
+	if u.Name != "" {
+		m.Name = u.Name
+	}
+
+	if u.Description != "" {
+		m.Description = u.Description
+	}
+
+	if u.DownloadCode != "" {
+		m.DownloadCode = u.DownloadCode
+	}
+
+	if u.Type != "" {
+		m.Type = u.Type
+	}
+}
+
+type MapFromDB struct {
+	ID           int64
+	CreatedAt    int
+	UpdatedAt    int
+	Name         string
+	Description  string
+	DownloadCode string
+	Type         string
+	UserID       int64
+	Views        int
+	Photos       string
+}
+
+//SortOptions used by FindCampaignList
+type SortOptions struct {
+	Limit   int
+	Offset  int
+	OrderBy string
 }

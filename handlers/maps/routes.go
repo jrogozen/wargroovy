@@ -15,13 +15,13 @@ func Routes(configuration *config.Config) *chi.Mux {
 		router.Use(u.Authenticator)
 
 		router.Post("/", CreateAMap(configuration))
-		// router.Put("/{mapId}", EditAMap(configuration))
+		router.Put("/{mapId}", EditAMap(configuration))
 
 	})
 
 	router.Group(func(router chi.Router) {
+		router.Get("/list", GetMapList(configuration))
 		router.Get("/{mapId}", GetAMap(configuration))
-		// router.Get("/list", GetMapList(configuration))
 
 	})
 
