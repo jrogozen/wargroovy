@@ -33,6 +33,7 @@ type mapSQL struct {
 	insert       *sql.Stmt
 	insertPhotos *sql.Stmt
 	get          *sql.Stmt
+	getBySlug    *sql.Stmt
 	getPhotos    *sql.Stmt
 	listBy       *sql.Stmt
 	update       *sql.Stmt
@@ -64,6 +65,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapInsert *sql.Stmt
 	var mapPhotosInsert *sql.Stmt
 	var mapGet *sql.Stmt
+	var mapGetBySlug *sql.Stmt
 	var mapListBy *sql.Stmt
 	var mapUpdate *sql.Stmt
 
@@ -99,6 +101,10 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: update map: %v", err)
 	}
 
+	if mapGetBySlug, err = db.Conn.Prepare(getMapBySlugStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare map get by slug: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
@@ -106,6 +112,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.insert = mapInsert
 	db.maps.insertPhotos = mapPhotosInsert
 	db.maps.get = mapGet
+	db.maps.getBySlug = mapGetBySlug
 	db.maps.listBy = mapListBy
 	db.maps.update = mapUpdate
 
@@ -250,6 +257,33 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("psql: could not find map with id %d", id)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("psql: could not get map: %v", err)
+	}
+
+	return m, nil
+}
+
+const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos
+FROM maps m
+left join (
+	select map_id, string_agg(url, ',') AS photos
+	from map_photos
+	GROUP BY map_id
+) p ON m.id = map_id
+WHERE slug = $1
+`
+
+func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
+	m, err := scanMap(db.maps.getBySlug.QueryRow(slug))
+
+	log.Info("looking for map")
+	log.Info(slug)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("psql: could not find map with slug %s", slug)
 	}
 
 	if err != nil {

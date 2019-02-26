@@ -25,10 +25,7 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 		return u.Message(false, err.Error())
 	}
 
-	log.Info("merging")
 	originalMap.Merge(m)
-
-	log.Info("Merged")
 
 	insertedID, err := configuration.DB.UpdateMap(originalMap)
 
@@ -57,6 +54,7 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 
 func FindMap(configuration *config.Config, mapIdString string) map[string]interface{} {
 	mapID, _ := strconv.ParseInt(mapIdString, 10, 64)
+
 	m, err := configuration.DB.GetMap(mapID)
 
 	if err != nil {
@@ -68,6 +66,19 @@ func FindMap(configuration *config.Config, mapIdString string) map[string]interf
 
 	return response
 
+}
+
+func FindMapBySlug(configuration *config.Config, slug string) map[string]interface{} {
+	m, err := configuration.DB.GetMapBySlug(slug)
+
+	if err != nil {
+		return u.Message(false, err.Error())
+	}
+
+	response := u.Message(true, "Map found")
+	response["map"] = m
+
+	return response
 }
 
 func Create(configuration *config.Config, claims map[string]interface{}, m *schema.Map) map[string]interface{} {

@@ -51,6 +51,18 @@ func GetAMap(configuration *config.Config) http.HandlerFunc {
 	})
 }
 
+func GetAMapBySlug(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slug := chi.URLParam(r, "slug")
+
+		response := FindMapBySlug(configuration, slug)
+
+		u.Respond(w, r, response)
+
+		return
+	})
+}
+
 func GetMapList(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sortOptions := GetSortOptions(r)
