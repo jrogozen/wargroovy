@@ -9,32 +9,23 @@
 - [x] - POST /user
 - [X] - GET /user (uses jwt for auth)
 
-#### /campaign
-- [x] - POST /campaign
-- [x] - POST /campign/map
-- [x] - GET /campaign/{campaignId}
-- [X] - GET /campaign/list - list of compaigns with queryParam
-- [X] - PUT /campaign/{campaignId}
-- [X] - PUT /campaign/{campaignId}/map/{mapId}
+#### /map
+- [x] - POST /map
+- [x] - GET /map/{mapId}
+- [X] - GET /map/list - list of compaigns with queryParam
+- [X] - PUT /map/{mapId}
+
+#### /photo
+- [x] - POST /photo
 
 
 ### relationships
-users have campaigns
-campaigns have one user
+users have maps
+maps have one user
 
-campaigns have maps
-map has one campaign
+maps have many photos
+photos have one map
 
-### notes
-on frontend, user is asked if they'd like to save a campaign or a single map
-    - single map
-        - create campaign with blank info + single_map_campaign TRUE
-        - create map and attach to campaign
-    - campaign
-        - create campaign with info + single_map_campaign false
-        - prompt for map info
-
-all maps must be attached to a campaign. UI is different for single vs multi-map campaigns
 
 ### deployment todo
 - [x] set version of 3rd party packages
@@ -42,11 +33,9 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] set up google sdk locally
 - [x] set up gcloud project, enable google app engine (GAE)
 - [x] deploy to GAE
-- [ ] ~~connect GAE and domain~~ probably wait on this. frontend and backend prob separate services
 - [x] ~~set up SSL~~
 - [x] set up postgres on google cloud
 - [x] set up env variable injection for GAE
-- [ ] ~~continous integration (circle CI, drone, ...)~~
 - [x] CI github hook (master push -> deploy)
 - [x] best way to access cloud sql db. `gcloud sql connect wargroovy-production -u postgres`
 
@@ -58,7 +47,6 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] jwt middleware should return json instead of 40x + text
 - [x] finish protecting user actions with jwt
 - [x] clean up models/controller interactions. models should return fully completed response :)
-- [ ] search db for maps based on title (relating to url slug)
 - [x] combine maps + campaigns
 - [x] add to campaign: download code, type
 - [ ] make work with draft-js data structure
@@ -66,23 +54,32 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 - [x] add to user: name
 - [x] change photos to separate table
 - [x] upload photos route
-- [ ] can create user without username AND email (but fail if only one supplied not two)
 - [x] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
 - [ ] edit/delete map photos
 - [ ] delete map
 - [ ] edit user
-- [ ] delete user
 - [ ] jwt set as cookie in response
+- [x] add slug field to maps. generate this on the server for use in url
+- [ ] change map/{mapId} get to map/{username}/{slug}
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
 - [ ] discord w/ deploy / error integrations
 - [ ] public issue repo on github
-- [ ] ~~set up db migrations. maybe [sql-migrate](https://github.com/rubenv/sql-migrate)~~ temp use gorm.AutoMigrate
-- ~~[ ] image pipeline to create thumbnails and upload images to gloud bucket~~
+- [x] set up db migrations. using goose
 - [ ] ML model to flag images that are not associated with wargroove
 - [ ] add map comments
 - [ ] add map ratings
+- [ ] add map tags
+- [ ] jwt auth the photo upload api (requires username/email-less user creation)
+- [ ] delete user
+
+### punt
+- ~~[ ] image pipeline to create thumbnails and upload images to gloud bucket~~
+- ~~[ ] can create user without username AND email (but fail if only one supplied not two)~~ force users to login to upload
+- [ ] ~~connect GAE and domain~~ probably wait on this. frontend and backend prob separate services
+- [ ] ~~continous integration (circle CI, drone, ...)~~
+
 
 ### helpful commands
 
@@ -93,6 +90,6 @@ all maps must be attached to a campaign. UI is different for single vs multi-map
 `gcloud app deploy`
 
 ### local dev
-`cd web && gin -p 3000 -a 8080 -t ../ -d . run main.go`
+`cd web && gin -p 4000 -a 8080 -t ../ -d . run main.go`
 
 runs the proxy on port 3000 (main app on 8080)

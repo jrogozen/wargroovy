@@ -64,7 +64,7 @@ func GetMapList(configuration *config.Config) http.HandlerFunc {
 
 func EditAMap(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mapIdString := chi.URLParam(r, "mapId")
+		mapIDString := chi.URLParam(r, "mapId")
 		mapUpdate := &schema.Map{}
 
 		// requires jwt-auth middleware to be used in part of the router stack
@@ -82,7 +82,7 @@ func EditAMap(configuration *config.Config) http.HandlerFunc {
 			return
 		}
 
-		resp := UpdateMap(configuration, claims, mapIdString, mapUpdate)
+		resp := UpdateMap(configuration, claims, mapIDString, mapUpdate)
 
 		u.Respond(w, r, resp)
 		return

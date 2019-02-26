@@ -13,6 +13,10 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 
 	originalMap, err := configuration.DB.GetMap(mapID)
 
+	if err != nil {
+		return u.Message(false, err.Error())
+	}
+
 	if resp, ok := ValidateUpdate(configuration, claims, originalMap); !ok {
 		return resp
 	}
@@ -21,7 +25,10 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 		return u.Message(false, err.Error())
 	}
 
+	log.Info("merging")
 	originalMap.Merge(m)
+
+	log.Info("Merged")
 
 	insertedID, err := configuration.DB.UpdateMap(originalMap)
 
@@ -38,6 +45,7 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 		Type:         originalMap.Type,
 		UserID:       originalMap.UserID,
 		Views:        originalMap.Views,
+		Slug:         originalMap.Slug,
 		Photos:       originalMap.Photos,
 	}
 
@@ -74,21 +82,8 @@ func Create(configuration *config.Config, claims map[string]interface{}, m *sche
 
 		return u.Message(false, err.Error())
 	}
-
-	//TODO missing created at, updated at
-	createdMap := &schema.Map{
-		ID:           insertedID,
-		Name:         m.Name,
-		Description:  m.Description,
-		DownloadCode: m.DownloadCode,
-		Type:         m.Type,
-		UserID:       m.UserID,
-		Views:        0,
-		Photos:       m.Photos,
-	}
-
 	response := u.Message(true, "Map created")
-	response["map"] = createdMap
+	response["map"] = insertedID
 
 	return response
 }

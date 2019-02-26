@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jrogozen/wargroovy/schema"
 	"github.com/lib/pq"
+	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
@@ -189,8 +190,8 @@ func (db *PsqlDB) GetUserByLogin(email string) (*schema.User, error) {
 }
 
 const insertMapStatement = `INSERT into maps (
-		created_at, updated_at, name, description, download_code, type, views, user_id
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+		created_at, updated_at, name, description, download_code, type, views, slug, user_id
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 const insertMapPhotosStatement = `INSERT into map_photos (
 		map_id, url
 	) VALUES ($1, $2) RETURNING id`
@@ -198,10 +199,13 @@ const insertMapPhotosStatement = `INSERT into map_photos (
 func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	now := time.Now().UnixNano()
 
+	// nicely formatted unique url
+	slug := strings.Replace(m.Name, " ", "-", -1) + "-" + xid.New().String()
+
 	var insertedID int64
 
 	err := QueryRow(db.maps.insert,
-		now, now, m.Name, m.Description, m.DownloadCode, m.Type, 0, m.UserID).
+		now, now, m.Name, m.Description, m.DownloadCode, m.Type, 0, slug, m.UserID).
 		Scan(&insertedID)
 
 	if err != nil {
@@ -231,7 +235,7 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	return insertedID, nil
 }
 
-const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, photos
+const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -255,7 +259,7 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 	return m, nil
 }
 
-const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, photos
+const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos
 	from maps m
 	left join (
 		select map_id, string_agg(url, ',') AS photos
@@ -296,8 +300,8 @@ func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) 
 }
 
 const updateMapStatement = `UPDATE maps
-	SET updated_at = $1, name = $2, description = $3, download_code = $4, type = $5
-	WHERE id = $6
+	SET updated_at = $1, name = $2, description = $3, download_code = $4, type = $5, slug = $6
+	WHERE id = $7
 	RETURNING id
 `
 
@@ -310,7 +314,7 @@ func (db *PsqlDB) UpdateMap(m *schema.Map) (int64, error) {
 
 	var updatedID int64
 
-	err := QueryRow(db.maps.update, now, m.Name, m.Description, m.DownloadCode, m.Type, m.ID).
+	err := QueryRow(db.maps.update, now, m.Name, m.Description, m.DownloadCode, m.Type, m.Slug, m.ID).
 		Scan(&updatedID)
 
 	if err != nil {
@@ -361,6 +365,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Type         string
 		userID       int64
 		views        int
+		slug         string
 		photos       sql.NullString
 	)
 
@@ -374,6 +379,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		&Type,
 		&userID,
 		&views,
+		&slug,
 		&photos,
 	); err != nil {
 		return nil, err
@@ -397,6 +403,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Type:         Type,
 		UserID:       userID,
 		Views:        views,
+		Slug:         slug,
 		Photos:       photosArray,
 	}
 

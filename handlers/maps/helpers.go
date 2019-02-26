@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-//Validate validates campaign fields for campaign creation
+//Validate validates map fields for map creation
 func Validate(configuration *config.Config, claims map[string]interface{}, m *schema.Map) (map[string]interface{}, bool) {
 	if m.UserID <= 0 {
 		return u.Message(false, "maps need to be owned by a user"), false
@@ -16,6 +16,10 @@ func Validate(configuration *config.Config, claims map[string]interface{}, m *sc
 
 	if _, ok := u.IsUserAuthorized(m.UserID, claims); !ok {
 		return u.Message(false, "Can only create a map associated with valid userId"), false
+	}
+
+	if m.Name == "" {
+		return u.Message(false, "Maps must have a name"), false
 	}
 
 	return u.Message(true, "Valid"), true
