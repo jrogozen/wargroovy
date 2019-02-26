@@ -15,6 +15,7 @@
 - [x] - GET /map/bySlug/{slug}
 - [X] - GET /map/list - list of compaigns with queryParam
 - [X] - PUT /map/{mapId}
+- [X] - DELETE /map/{mapId}/photo
 
 #### /photo
 - [x] - POST /photo
@@ -57,9 +58,9 @@ photos have one map
 - [x] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
 - [x] add slug field to maps. generate this on the server for use in url
 - [x] add finding map by slug
-- [ ] can create user without username AND email (but fail if only one supplied not two)
-- [ ] make work with draft-js data structure
+- [x] can create user without username AND email (but fail if only one supplied not two)
 - [x] delete map photos
+- [ ] make work with draft-js data structure
 - [ ] delete map
 - [ ] edit user
 - [ ] jwt set as cookie in response

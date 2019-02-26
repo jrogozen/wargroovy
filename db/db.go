@@ -136,8 +136,13 @@ func (db *PsqlDB) AddUser(u *schema.CreateUser) (id int64, err error) {
 
 	var insertedID int64
 
-	err = QueryRow(db.users.insert, now, now, u.Email, u.Username, u.Password).
-		Scan(&insertedID)
+	if u.Email == "" || u.Username == "" {
+		err = QueryRow(db.users.insert, now, now, nil, nil, u.Password).
+			Scan(&insertedID)
+	} else {
+		err = QueryRow(db.users.insert, now, now, u.Email, u.Username, u.Password).
+			Scan(&insertedID)
+	}
 
 	if err != nil || insertedID == 0 {
 		if pgerr, ok := err.(*pq.Error); ok {

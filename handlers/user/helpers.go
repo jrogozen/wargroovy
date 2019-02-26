@@ -11,12 +11,20 @@ import (
 => { "status": true, "message": "ok" }, true
 */
 func Validate(configuration *config.Config, user *schema.CreateUser) (map[string]interface{}, bool) {
-	if !strings.Contains(user.Email, "@") {
+	hasEmail := user.Email != ""
+	hasUsername := user.Username != ""
+	creatingRealAccount := hasEmail || hasUsername
+
+	if creatingRealAccount && !strings.Contains(user.Email, "@") {
 		return u.Message(false, "Email address not valid"), false
 	}
 
-	if len(user.Password) < 6 {
+	if creatingRealAccount && len(user.Password) < 6 {
 		return u.Message(false, "Invalid password"), false
+	}
+
+	if creatingRealAccount && len(user.Username) < 1 {
+		return u.Message(false, "Must create a username"), false
 	}
 
 	return u.Message(true, "Valid"), true
