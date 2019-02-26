@@ -35,6 +35,7 @@ type mapSQL struct {
 	get          *sql.Stmt
 	getBySlug    *sql.Stmt
 	getPhotos    *sql.Stmt
+	deletePhoto  *sql.Stmt
 	listBy       *sql.Stmt
 	update       *sql.Stmt
 }
@@ -68,6 +69,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapGetBySlug *sql.Stmt
 	var mapListBy *sql.Stmt
 	var mapUpdate *sql.Stmt
+	var mapPhotoDelete *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -105,6 +107,10 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare map get by slug: %v", err)
 	}
 
+	if mapPhotoDelete, err = db.Conn.Prepare(deleteMapPhotoStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare map delete photo: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
@@ -115,6 +121,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.getBySlug = mapGetBySlug
 	db.maps.listBy = mapListBy
 	db.maps.update = mapUpdate
+	db.maps.deletePhoto = mapPhotoDelete
 
 	return db, nil
 }
@@ -356,6 +363,26 @@ func (db *PsqlDB) UpdateMap(m *schema.Map) (int64, error) {
 	}
 
 	return updatedID, nil
+}
+
+const deleteMapPhotoStatement = `DELETE FROM map_photos
+WHERE url = $1 AND map_id = $2
+`
+
+func (db *PsqlDB) DeleteMapPhoto(mapID int64, url string) (int64, error) {
+	if mapID == 0 {
+		return 0, errors.New("psql: cannot delete photos from unassigned map ID")
+	}
+
+	r, err := db.maps.deletePhoto.Exec(url, mapID)
+
+	if err != nil {
+		return 0, errors.New("psql: could not delete photo")
+	}
+
+	rowsAffected, err := r.RowsAffected()
+
+	return rowsAffected, nil
 }
 
 type rowScanner interface {

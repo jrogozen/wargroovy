@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapIdString string, m *schema.Map) map[string]interface{} {
-	mapID, _ := strconv.ParseInt(mapIdString, 10, 64)
+func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapIDString string, m *schema.Map) map[string]interface{} {
+	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
 
 	originalMap, err := configuration.DB.GetMap(mapID)
 
@@ -19,10 +19,6 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 
 	if resp, ok := ValidateUpdate(configuration, claims, originalMap); !ok {
 		return resp
-	}
-
-	if err != nil {
-		return u.Message(false, err.Error())
 	}
 
 	originalMap.Merge(m)
@@ -52,8 +48,8 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 	return response
 }
 
-func FindMap(configuration *config.Config, mapIdString string) map[string]interface{} {
-	mapID, _ := strconv.ParseInt(mapIdString, 10, 64)
+func FindMap(configuration *config.Config, mapIDString string) map[string]interface{} {
+	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
 
 	m, err := configuration.DB.GetMap(mapID)
 
@@ -117,6 +113,31 @@ func FindMapList(configuration *config.Config, options *schema.SortOptions) map[
 
 	response := u.Message(true, "Maps found")
 	response["maps"] = maps
+
+	return response
+}
+
+func DeletePhoto(configuration *config.Config, claims map[string]interface{}, mapIDString string, url string) map[string]interface{} {
+	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
+
+	originalMap, err := configuration.DB.GetMap(mapID)
+
+	if err != nil {
+		return u.Message(false, err.Error())
+	}
+
+	if resp, ok := ValidateUpdate(configuration, claims, originalMap); !ok {
+		return resp
+	}
+
+	numPhotosDeleted, err := configuration.DB.DeleteMapPhoto(mapID, url)
+
+	if err != nil {
+		return u.Message(false, err.Error())
+	}
+
+	response := u.Message(true, "Photo deleted")
+	response["deleted"] = numPhotosDeleted
 
 	return response
 }

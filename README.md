@@ -12,6 +12,7 @@
 #### /map
 - [x] - POST /map
 - [x] - GET /map/{mapId}
+- [x] - GET /map/bySlug/{slug}
 - [X] - GET /map/list - list of compaigns with queryParam
 - [X] - PUT /map/{mapId}
 
@@ -56,8 +57,9 @@ photos have one map
 - [x] change user/get to work based off of jwt. return not logged in without it. prevents people from scraping for users
 - [x] add slug field to maps. generate this on the server for use in url
 - [x] add finding map by slug
+- [ ] can create user without username AND email (but fail if only one supplied not two)
 - [ ] make work with draft-js data structure
-- [ ] edit/delete map photos
+- [x] delete map photos
 - [ ] delete map
 - [ ] edit user
 - [ ] jwt set as cookie in response
@@ -77,7 +79,6 @@ photos have one map
 
 ### punt
 - ~~[ ] image pipeline to create thumbnails and upload images to gloud bucket~~
-- ~~[ ] can create user without username AND email (but fail if only one supplied not two)~~ force users to login to upload
 - [ ] ~~connect GAE and domain~~ probably wait on this. frontend and backend prob separate services
 - [ ] ~~continous integration (circle CI, drone, ...)~~
 

@@ -100,3 +100,35 @@ func EditAMap(configuration *config.Config) http.HandlerFunc {
 		return
 	})
 }
+
+func DeleteMapPhoto(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mapIDString := chi.URLParam(r, "mapId")
+
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, err := jwtauth.FromContext(r.Context())
+
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error authorizing user"))
+			return
+		}
+
+		type deleteMapOptions struct {
+			URL string `json:"url"`
+		}
+
+		options := &deleteMapOptions{}
+
+		err = render.DecodeJSON(r.Body, options)
+
+		if err != nil {
+			u.Respond(w, r, u.Message(false, "Error deleting photo"))
+			return
+		}
+
+		resp := DeletePhoto(configuration, claims, mapIDString, options.URL)
+
+		u.Respond(w, r, resp)
+		return
+	})
+}
