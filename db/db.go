@@ -25,7 +25,7 @@ type userSQL struct {
 	insert     *sql.Stmt
 	get        *sql.Stmt
 	getByLogin *sql.Stmt
-	// update     *sql.Stmt
+	update     *sql.Stmt
 	// delete     *sql.Stmt
 }
 
@@ -38,6 +38,7 @@ type mapSQL struct {
 	deletePhoto  *sql.Stmt
 	listBy       *sql.Stmt
 	update       *sql.Stmt
+	delete       *sql.Stmt
 }
 
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
@@ -62,6 +63,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var userInsert *sql.Stmt
 	var userGet *sql.Stmt
 	var userGetByLogin *sql.Stmt
+	var userUpdate *sql.Stmt
 
 	var mapInsert *sql.Stmt
 	var mapPhotosInsert *sql.Stmt
@@ -70,6 +72,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapListBy *sql.Stmt
 	var mapUpdate *sql.Stmt
 	var mapPhotoDelete *sql.Stmt
+	var mapDelete *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -111,9 +114,18 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare map delete photo: %v", err)
 	}
 
+	if mapDelete, err = db.Conn.Prepare(deleteMapStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare delete map: %v", err)
+	}
+
+	if userUpdate, err = db.Conn.Prepare(updateUserStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare update user: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
+	db.users.update = userUpdate
 
 	db.maps.insert = mapInsert
 	db.maps.insertPhotos = mapPhotosInsert
@@ -122,6 +134,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.listBy = mapListBy
 	db.maps.update = mapUpdate
 	db.maps.deletePhoto = mapPhotoDelete
+	db.maps.delete = mapDelete
 
 	return db, nil
 }
@@ -171,7 +184,7 @@ func (db *PsqlDB) AddUser(u *schema.CreateUser) (id int64, err error) {
 
 const getUserStatement = "SELECT * from users WHERE id = $1"
 
-func (db *PsqlDB) GetUser(id int64) (*schema.UserView, error) {
+func (db *PsqlDB) GetUser(id int64) (*schema.User, error) {
 	user, err := scanUser(db.users.get.QueryRow(id))
 
 	if err == sql.ErrNoRows {
@@ -182,14 +195,7 @@ func (db *PsqlDB) GetUser(id int64) (*schema.UserView, error) {
 		return nil, fmt.Errorf("psql: could not get user: %v", err)
 	}
 
-	// convert user into what we want to return with API
-	safeUserView := &schema.UserView{
-		ID:       user.ID,
-		Email:    user.Email,
-		Username: user.Username,
-	}
-
-	return safeUserView, nil
+	return user, nil
 }
 
 const getUserByLoginStatement = "SELECT * from users WHERE email = $1"
@@ -206,6 +212,30 @@ func (db *PsqlDB) GetUserByLogin(email string) (*schema.User, error) {
 	}
 
 	return user, nil
+}
+
+const updateUserStatement = `UPDATE users
+	SET updated_at = $1, email = $2, username = $3, password = $4
+	WHERE id = $5
+	RETURNING id`
+
+func (db *PsqlDB) UpdateUser(u *schema.User) (int64, error) {
+	if u.ID == 0 {
+		return 0, errors.New("psql: cannot update user with unassigned ID")
+	}
+
+	now := time.Now().UnixNano()
+
+	var updatedID int64
+
+	err := QueryRow(db.users.update, now, u.Email, u.Username, u.Password, u.ID).
+		Scan(&updatedID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return updatedID, nil
 }
 
 const insertMapStatement = `INSERT into maps (
@@ -370,9 +400,7 @@ func (db *PsqlDB) UpdateMap(m *schema.Map) (int64, error) {
 	return updatedID, nil
 }
 
-const deleteMapPhotoStatement = `DELETE FROM map_photos
-WHERE url = $1 AND map_id = $2
-`
+const deleteMapPhotoStatement = "DELETE FROM map_photos WHERE url = $1 AND map_id = $2"
 
 func (db *PsqlDB) DeleteMapPhoto(mapID int64, url string) (int64, error) {
 	if mapID == 0 {
@@ -383,6 +411,24 @@ func (db *PsqlDB) DeleteMapPhoto(mapID int64, url string) (int64, error) {
 
 	if err != nil {
 		return 0, errors.New("psql: could not delete photo")
+	}
+
+	rowsAffected, err := r.RowsAffected()
+
+	return rowsAffected, nil
+}
+
+const deleteMapStatement = "DELETE from maps WHERE id = $1"
+
+func (db *PsqlDB) DeleteMap(mapID int64) (int64, error) {
+	if mapID == 0 {
+		return 0, errors.New("psql: cannot delete map with unassigned map ID")
+	}
+
+	r, err := db.maps.delete.Exec(mapID)
+
+	if err != nil {
+		return 0, errors.New("psql: could not delete map")
 	}
 
 	rowsAffected, err := r.RowsAffected()

@@ -23,18 +23,20 @@ func UploadPhotos(configuration *config.Config) http.HandlerFunc {
 		for _, fh := range fhs {
 			f, err := fh.Open()
 
-			resp := Upload(configuration, f, fh)
+			resp, status := Upload(configuration, f, fh)
 
 			if resp["status"].(bool) {
 				photoURLs = append(photoURLs, resp["url"].(string))
 			}
 
 			if err == http.ErrMissingFile {
+				w.WriteHeader(status)
 				u.Respond(w, r, u.Message(false, "no photo to upload"))
 				return
 			}
 
 			if err != nil {
+				w.WriteHeader(status)
 				u.Respond(w, r, u.Message(false, err.Error()))
 				return
 			}
@@ -43,6 +45,7 @@ func UploadPhotos(configuration *config.Config) http.HandlerFunc {
 		response := u.Message(true, "photos uploaded")
 		response["urls"] = photoURLs
 
+		w.WriteHeader(http.StatusOK)
 		u.Respond(w, r, response)
 		return
 	})

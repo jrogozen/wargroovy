@@ -15,7 +15,7 @@ func Validate(configuration *config.Config, claims map[string]interface{}, m *sc
 	}
 
 	if _, ok := u.IsUserAuthorized(m.UserID, claims); !ok {
-		return u.Message(false, "Can only create a map associated with valid userId"), false
+		return u.Message(false, "Can only create or edit a map associated with valid userId"), false
 	}
 
 	if m.Name == "" {
@@ -27,7 +27,7 @@ func Validate(configuration *config.Config, claims map[string]interface{}, m *sc
 
 func ValidateUpdate(configuration *config.Config, claims map[string]interface{}, m *schema.Map) (map[string]interface{}, bool) {
 	if _, ok := u.IsUserAuthorized(m.UserID, claims); !ok {
-		return u.Message(false, "Can only create a map associated with valid userId"), false
+		return u.Message(false, "Can only create or edit a map associated with valid userId"), false
 	}
 
 	return u.Message(true, "Valid"), true

@@ -16,12 +16,14 @@ func LoginAUser(configuration *config.Config) http.HandlerFunc {
 		err := render.DecodeJSON(r.Body, user)
 
 		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
 			u.Respond(w, r, u.Message(false, "Invalid request"))
 			return
 		}
 
-		rsp := Login(configuration, user.Email, user.Password)
+		rsp, status := Login(configuration, user.Email, user.Password)
 
+		w.WriteHeader(status)
 		u.Respond(w, r, rsp)
 		return
 	})

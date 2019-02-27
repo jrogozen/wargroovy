@@ -2,19 +2,37 @@ package schema
 
 import (
 	"github.com/rs/xid"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
 
 //User not safe to return ever. corresponds to every row in table
 // used when fetching from DB
 type User struct {
-	ID        int64
-	CreatedAt int
-	UpdatedAt int
-	Email     string
-	Username  string
-	Password  string
+	ID        int64  `json:"id"`
+	CreatedAt int    `json:"created_at"`
+	UpdatedAt int    `json:"updated_at"`
+	Email     string `json:"email"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
 	Token     string `json:"token"`
+}
+
+// handle what properties can be updated by a user and when
+func (user *User) Merge(update *User) {
+	if update.Password != "" {
+		// need to hash a new password
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(update.Password), bcrypt.DefaultCost)
+		user.Password = string(hashedPassword)
+	}
+
+	if update.Email != "" {
+		user.Email = update.Email
+	}
+
+	if update.Username != "" {
+		user.Username = update.Username
+	}
 }
 
 //CreateUser what to accept to create a user

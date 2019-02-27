@@ -9,10 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"path"
 )
 
-func Upload(configuration *config.Config, f multipart.File, fh *multipart.FileHeader) map[string]interface{} {
+func Upload(configuration *config.Config, f multipart.File, fh *multipart.FileHeader) (map[string]interface{}, int) {
 	// random filename, retaining existing extension.
 	name := "map_photos/" + uuid.Must(uuid.NewV4()).String() + path.Ext(fh.Filename)
 
@@ -32,14 +33,14 @@ func Upload(configuration *config.Config, f multipart.File, fh *multipart.FileHe
 			"error": err,
 		}).Error("Error copying photo")
 
-		return u.Message(false, "Error uploading photo")
+		return u.Message(false, "Error uploading photo"), http.StatusBadRequest
 	}
 	if err := w.Close(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("Error closing write stream")
 
-		return u.Message(false, "Error uploading photo")
+		return u.Message(false, "Error uploading photo"), http.StatusBadRequest
 	}
 
 	const publicURL = "https://storage.googleapis.com/%s/%s"
@@ -48,5 +49,5 @@ func Upload(configuration *config.Config, f multipart.File, fh *multipart.FileHe
 	response := u.Message(true, "Uploaded photos")
 	response["url"] = uploadedURL
 
-	return response
+	return response, http.StatusOK
 }

@@ -5,19 +5,20 @@ import (
 	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
 	"golang.org/x/crypto/bcrypt"
+	"net/http"
 )
 
-func Login(configuration *config.Config, email string, password string) map[string]interface{} {
+func Login(configuration *config.Config, email string, password string) (map[string]interface{}, int) {
 	user, err := configuration.DB.GetUserByLogin(email)
 
 	if err != nil {
-		return u.Message(false, err.Error())
+		return u.Message(false, err.Error()), http.StatusForbidden
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		return u.Message(false, "Invalid credentials")
+		return u.Message(false, "Invalid credentials"), http.StatusForbidden
 	}
 
 	secureUser := &schema.SecureUserView{
@@ -32,5 +33,5 @@ func Login(configuration *config.Config, email string, password string) map[stri
 	resp := u.Message(true, "Logged in")
 	resp["user"] = secureUser
 
-	return resp
+	return resp, http.StatusOK
 }

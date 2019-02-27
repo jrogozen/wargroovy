@@ -60,17 +60,18 @@ photos have one map
 - [x] add finding map by slug
 - [x] can create user without username AND email (but fail if only one supplied not two)
 - [x] delete map photos
+- [x] delete map
+- [x] edit user
+- [x] api return correct status codes (20x, 40x)
 - [ ] make work with draft-js data structure
-- [ ] delete map
-- [ ] edit user
 - [ ] jwt set as cookie in response
 - [ ] increment map view
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
+- [x] set up db migrations. using goose
 - [ ] discord w/ deploy / error integrations
 - [ ] public issue repo on github
-- [x] set up db migrations. using goose
 - [ ] ML model to flag images that are not associated with wargroove
 - [ ] add map comments
 - [ ] add map ratings
