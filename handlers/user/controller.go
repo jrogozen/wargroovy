@@ -26,6 +26,12 @@ func CreateAUser(configuration *config.Config) http.HandlerFunc {
 
 		resp, status := Create(configuration, user)
 
+		if resp["status"].(bool) {
+			token := resp["user"].(*schema.CreatedUser).Token
+
+			u.AttachAuthCookie(token, w)
+		}
+
 		w.WriteHeader(status)
 		u.Respond(w, r, resp)
 		return

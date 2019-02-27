@@ -22,6 +22,17 @@ func GetToken(configuration *config.Config, userID int64) string {
 	return tokenString
 }
 
+func AttachAuthCookie(token string, w http.ResponseWriter) {
+	responseCookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    token,
+		MaxAge:   0,
+		HttpOnly: true,
+	}
+
+	http.SetCookie(w, responseCookie)
+}
+
 func IsUserAuthorized(attemptedUserID int64, claims map[string]interface{}) (map[string]interface{}, bool) {
 	actualUserID := int64(claims["UserID"].(float64))
 

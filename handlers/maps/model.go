@@ -58,6 +58,12 @@ func FindMap(configuration *config.Config, mapIDString string) (map[string]inter
 		return u.Message(false, err.Error()), http.StatusBadRequest
 	}
 
+	_, err = configuration.DB.IncrementMapView(mapID)
+
+	if err != nil {
+		log.WithField("mapId", mapID).Warn("Could not increment map view")
+	}
+
 	response := u.Message(true, "Map found")
 	response["map"] = m
 
@@ -70,6 +76,12 @@ func FindMapBySlug(configuration *config.Config, slug string) (map[string]interf
 
 	if err != nil {
 		return u.Message(false, err.Error()), http.StatusBadRequest
+	}
+
+	_, err = configuration.DB.IncrementMapView(m.ID)
+
+	if err != nil {
+		log.WithField("mapId", m.ID).Warn("Could not increment map view")
 	}
 
 	response := u.Message(true, "Map found")
@@ -95,12 +107,6 @@ func Create(configuration *config.Config, claims map[string]interface{}, m *sche
 
 	return response, http.StatusOK
 }
-
-// func IncrementMapView(configuration *config.Config, m schema.Map) schema.Map {
-// 	configuration.Database.Model(&m).Update("views", m.Views+1)
-
-// 	return m
-// }
 
 // //FindMapList returns ordered list of maps
 func FindMapList(configuration *config.Config, options *schema.SortOptions) (map[string]interface{}, int) {

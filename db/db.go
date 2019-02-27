@@ -39,6 +39,7 @@ type mapSQL struct {
 	listBy       *sql.Stmt
 	update       *sql.Stmt
 	delete       *sql.Stmt
+	view         *sql.Stmt
 }
 
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
@@ -73,6 +74,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapUpdate *sql.Stmt
 	var mapPhotoDelete *sql.Stmt
 	var mapDelete *sql.Stmt
+	var mapView *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -122,6 +124,10 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare update user: %v", err)
 	}
 
+	if mapView, err = db.Conn.Prepare(incrementMapViewStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare map view: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
@@ -135,6 +141,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.update = mapUpdate
 	db.maps.deletePhoto = mapPhotoDelete
 	db.maps.delete = mapDelete
+	db.maps.view = mapView
 
 	return db, nil
 }
@@ -434,6 +441,31 @@ func (db *PsqlDB) DeleteMap(mapID int64) (int64, error) {
 	rowsAffected, err := r.RowsAffected()
 
 	return rowsAffected, nil
+}
+
+const incrementMapViewStatement = `UPDATE maps
+SET updated_at = $1, views = views + 1
+WHERE ID = $2
+RETURNING id
+`
+
+func (db *PsqlDB) IncrementMapView(mapID int64) (int64, error) {
+	if mapID == 0 {
+		return 0, errors.New("psql: cannot update map with unassigned map ID")
+	}
+
+	now := time.Now().UnixNano()
+
+	var updatedID int64
+
+	err := QueryRow(db.maps.view, now, mapID).
+		Scan(&updatedID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return updatedID, nil
 }
 
 type rowScanner interface {

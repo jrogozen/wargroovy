@@ -63,9 +63,9 @@ photos have one map
 - [x] delete map
 - [x] edit user
 - [x] api return correct status codes (20x, 40x)
+- [x] jwt set as cookie in response
+- [x] increment map view
 - [ ] make work with draft-js data structure
-- [ ] jwt set as cookie in response
-- [ ] increment map view
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
