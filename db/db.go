@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jrogozen/wargroovy/schema"
+	// u "github.com/jrogozen/wargroovy/utils"
 	"github.com/lib/pq"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
@@ -272,7 +273,8 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 		var insertedPhotoID int64
 
 		for _, url := range m.Photos {
-			err = QueryRow(db.maps.insertPhotos, insertedID, url).Scan(&insertedPhotoID)
+			err = QueryRow(db.maps.insertPhotos, insertedID, url).
+				Scan(&insertedPhotoID)
 
 			if err != nil {
 				log.WithFields(log.Fields{
@@ -477,9 +479,9 @@ func scanUser(s rowScanner) (*schema.User, error) {
 		id        int64
 		createdAt int
 		updatedAt int
-		email     string
-		username  string
-		password  string
+		email     sql.NullString
+		username  sql.NullString
+		password  sql.NullString
 	)
 
 	if err := s.Scan(&id, &createdAt, &updatedAt, &email, &username, &password); err != nil {
@@ -490,9 +492,9 @@ func scanUser(s rowScanner) (*schema.User, error) {
 		ID:        id,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
-		Email:     email,
-		Username:  username,
-		Password:  password,
+		Email:     email.String,
+		Username:  username.String,
+		Password:  password.String,
 	}
 
 	return user, nil
@@ -504,7 +506,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		createdAt    int
 		updatedAt    int
 		name         string
-		description  string
+		description  schema.DescriptionMap
 		downloadCode string
 		Type         string
 		userID       int64

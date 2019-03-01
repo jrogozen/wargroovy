@@ -1,7 +1,11 @@
 package schema
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"github.com/rs/xid"
+	// log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
@@ -75,17 +79,17 @@ type MapPhoto struct {
 //Map not safe to return ever. corresponds to every row in table
 // used when fetching from DB
 type Map struct {
-	ID           int64    `json:"id"`
-	CreatedAt    int      `json:"created_at"`
-	UpdatedAt    int      `json:"updated_at"`
-	Name         string   `json:"name"`
-	Description  string   `json:"description"`
-	DownloadCode string   `json:"downloadCode"`
-	Type         string   `json:"type"`
-	UserID       int64    `json:"userId" sql:"type:integer REFERENCES users(id)"`
-	Views        int      `json:"views"`
-	Photos       []string `json:"photos"`
-	Slug         string   `json:"slug"`
+	ID           int64          `json:"id"`
+	CreatedAt    int            `json:"created_at"`
+	UpdatedAt    int            `json:"updated_at"`
+	Name         string         `json:"name"`
+	Description  DescriptionMap `json:"description"`
+	DownloadCode string         `json:"downloadCode"`
+	Type         string         `json:"type"`
+	UserID       int64          `json:"userId" sql:"type:integer REFERENCES users(id)"`
+	Views        int            `json:"views"`
+	Photos       []string       `json:"photos"`
+	Slug         string         `json:"slug"`
 }
 
 func (m *Map) Merge(u *Map) {
@@ -98,7 +102,7 @@ func (m *Map) Merge(u *Map) {
 		m.Slug = slug
 	}
 
-	if u.Description != "" {
+	if u.Description != nil {
 		m.Description = u.Description
 	}
 
@@ -116,7 +120,7 @@ type MapFromDB struct {
 	CreatedAt    int
 	UpdatedAt    int
 	Name         string
-	Description  string
+	Description  DescriptionMap
 	DownloadCode string
 	Type         string
 	UserID       int64
@@ -129,4 +133,34 @@ type SortOptions struct {
 	Limit   int
 	Offset  int
 	OrderBy string
+}
+
+type DescriptionMap map[string]interface{}
+
+func (d DescriptionMap) Value() (driver.Value, error) {
+	j, err := json.Marshal(d)
+	return j, err
+}
+
+func (d *DescriptionMap) Scan(src interface{}) error {
+	source, ok := src.([]byte)
+
+	if !ok {
+		return nil
+	}
+
+	var i interface{}
+	err := json.Unmarshal(source, &i)
+
+	if err != nil {
+		return err
+	}
+
+	*d, ok = i.(map[string]interface{})
+
+	if !ok {
+		return errors.New("Type assertion .(map[string]interface{}) failed.")
+	}
+
+	return nil
 }

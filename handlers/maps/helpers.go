@@ -10,8 +10,13 @@ import (
 
 //Validate validates map fields for map creation
 func Validate(configuration *config.Config, claims map[string]interface{}, m *schema.Map) (map[string]interface{}, bool) {
-	if m.UserID <= 0 {
-		return u.Message(false, "maps need to be owned by a user"), false
+	if claims["UserID"] == nil {
+		return u.Message(false, "Maps need to be owned by a user"), false
+	}
+
+	if m.UserID <= 0 && claims["UserID"] != nil {
+		// map is missing userID, set it based on claim
+		m.UserID = int64(claims["UserID"].(float64))
 	}
 
 	if _, ok := u.IsUserAuthorized(m.UserID, claims); !ok {

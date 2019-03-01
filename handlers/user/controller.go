@@ -20,6 +20,7 @@ func CreateAUser(configuration *config.Config) http.HandlerFunc {
 		err := render.DecodeJSON(r.Body, user)
 
 		if err != nil {
+			log.Error(err)
 			u.Respond(w, r, u.Message(false, "Invalid request"))
 			return
 		}

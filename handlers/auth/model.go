@@ -27,7 +27,7 @@ func Login(configuration *config.Config, email string, password string) (map[str
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
 		Username:  user.Username,
-		Token:     u.GetToken(configuration, user.ID),
+		Token:     configuration.GetToken(user.ID),
 	}
 
 	resp := u.Message(true, "Logged in")

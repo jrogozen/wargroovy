@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/go-chi/render"
 	"net/http"
 )
@@ -19,4 +21,12 @@ func StringWithDefault(val, fallback string) string {
 	} else {
 		return fallback
 	}
+}
+
+func MapToString(m map[string]interface{}) string {
+	b := new(bytes.Buffer)
+	for key, value := range m {
+		fmt.Fprintf(b, "%s=\"%s\"\n", key, value)
+	}
+	return b.String()
 }

@@ -15,9 +15,11 @@ func Create(configuration *config.Config, user *schema.CreateUser) (map[string]i
 		return resp, http.StatusBadRequest
 	}
 
-	// hash password
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	user.Password = string(hashedPassword)
+	if user.Password != "" {
+		// hash password
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		user.Password = string(hashedPassword)
+	}
 
 	insertedID, err := configuration.DB.AddUser(user)
 
@@ -30,7 +32,7 @@ func Create(configuration *config.Config, user *schema.CreateUser) (map[string]i
 		ID:       insertedID,
 		Email:    user.Email,
 		Username: user.Username,
-		Token:    u.GetToken(configuration, insertedID),
+		Token:    configuration.GetToken(insertedID),
 	}
 
 	response := u.Message(true, "User created")

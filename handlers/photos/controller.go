@@ -5,6 +5,7 @@ import (
 	// "github.com/go-chi/render"
 	"github.com/jrogozen/wargroovy/internal/config"
 	u "github.com/jrogozen/wargroovy/utils"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -15,11 +16,16 @@ func UploadPhotos(configuration *config.Config) http.HandlerFunc {
 			return
 		}
 
-		r.ParseMultipartForm(32 << 20) // 32MB is the default used by FormFile
+		err := r.ParseMultipartForm(32 << 20) // 32MB is the default used by FormFile
+
+		if err != nil {
+			log.WithField("err", err).Error("error parsing multipart form")
+		}
+
 		fhs := r.MultipartForm.File["photos"]
 
 		photoURLs := make([]string, 0)
-
+		log.Info("hello?")
 		for _, fh := range fhs {
 			f, err := fh.Open()
 

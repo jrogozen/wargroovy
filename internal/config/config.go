@@ -5,6 +5,7 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/joho/godotenv"
 	"github.com/jrogozen/wargroovy/db"
@@ -74,6 +75,20 @@ func MakeDB() *db.PsqlDB {
 
 func InitJWT() *jwtauth.JWTAuth {
 	return jwtauth.New("HS256", []byte(os.Getenv("jwt_secret")), nil)
+}
+
+func (config *Config) GetToken(userID int64) string {
+	admin := false
+
+	_, tokenString, _ := config.TokenAuth.Encode(jwt.MapClaims{"UserID": userID, "Admin": admin})
+
+	log.WithFields(log.Fields{
+		"token":  tokenString,
+		"userId": userID,
+		"admin":  admin,
+	}).Info("Generated token for user")
+
+	return tokenString
 }
 
 func configureStorage(bucketID string) (*storage.BucketHandle, error) {

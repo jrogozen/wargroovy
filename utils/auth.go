@@ -1,33 +1,23 @@
 package utils
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
-	"github.com/jrogozen/wargroovy/internal/config"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"time"
 )
 
-func GetToken(configuration *config.Config, userID int64) string {
-	admin := false
-
-	_, tokenString, _ := configuration.TokenAuth.Encode(jwt.MapClaims{"UserID": userID, "Admin": admin})
-
-	log.WithFields(log.Fields{
-		"token":  tokenString,
-		"userId": userID,
-		"admin":  admin,
-	}).Info("Generated token for user")
-
-	return tokenString
-}
-
 func AttachAuthCookie(token string, w http.ResponseWriter) {
+	expire := time.Now().AddDate(0, 0, 7*52) // 1 year
+
 	responseCookie := &http.Cookie{
 		Name:     "jwt",
 		Value:    token,
 		MaxAge:   0,
+		Expires:  expire,
+		Path:     "/",
 		HttpOnly: true,
+		Secure:   false,
 	}
 
 	http.SetCookie(w, responseCookie)
