@@ -71,7 +71,6 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapPhotosInsert *sql.Stmt
 	var mapGet *sql.Stmt
 	var mapGetBySlug *sql.Stmt
-	var mapListBy *sql.Stmt
 	var mapUpdate *sql.Stmt
 	var mapPhotoDelete *sql.Stmt
 	var mapDelete *sql.Stmt
@@ -99,10 +98,6 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 
 	if mapGet, err = db.Conn.Prepare(getMapStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare map get: %v", err)
-	}
-
-	if mapListBy, err = db.Conn.Prepare(listByMapStatement); err != nil {
-		return nil, fmt.Errorf("psql: listBy map statement: %v", err)
 	}
 
 	if mapUpdate, err = db.Conn.Prepare(updateMapStatement); err != nil {
@@ -138,7 +133,6 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.insertPhotos = mapPhotosInsert
 	db.maps.get = mapGet
 	db.maps.getBySlug = mapGetBySlug
-	db.maps.listBy = mapListBy
 	db.maps.update = mapUpdate
 	db.maps.deletePhoto = mapPhotoDelete
 	db.maps.delete = mapDelete
@@ -257,7 +251,7 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	now := time.Now().UnixNano()
 
 	// nicely formatted unique url
-	slug := strings.Replace(m.Name, " ", "-", -1) + "-" + xid.New().String()
+	slug := strings.ToLower(strings.Replace(m.Name, " ", "-", -1)) + "-" + xid.New().String()
 
 	var insertedID int64
 
@@ -330,9 +324,6 @@ WHERE slug = $1
 func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
 	m, err := scanMap(db.maps.getBySlug.QueryRow(slug))
 
-	log.Info("looking for map")
-	log.Info(slug)
-
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("psql: could not find map with slug %s", slug)
 	}
@@ -351,13 +342,24 @@ const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.d
 		from map_photos
 		GROUP BY map_id
 	) p ON m.id = map_id
-	order by $1
-	limit $2
-	offset $3
+	%s
+	order by %s
+	limit %d
+	offset %d
 `
 
 func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) {
-	rows, err := db.maps.listBy.Query(options.OrderBy, options.Limit, options.Offset)
+	// order by is dynamic and cannot be prepared
+	qtext := fmt.Sprintf(listByMapStatement, options.Type, options.OrderBy, options.Limit, options.Offset)
+
+	log.WithFields(log.Fields{
+		"type":    options.Type,
+		"orderBy": options.OrderBy,
+		"limit":   options.Limit,
+		"offset":  options.Offset,
+	}).Info("listing map with options")
+
+	rows, err := db.Conn.Query(qtext)
 
 	if err != nil {
 		return nil, err
@@ -373,10 +375,6 @@ func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) 
 		if err != nil {
 			return nil, fmt.Errorf("psql: could not read row: %v", err)
 		}
-
-		log.WithFields(log.Fields{
-			"map": m,
-		}).Info("appending map")
 
 		maps = append(maps, m)
 	}
@@ -446,8 +444,8 @@ func (db *PsqlDB) DeleteMap(mapID int64) (int64, error) {
 }
 
 const incrementMapViewStatement = `UPDATE maps
-SET updated_at = $1, views = views + 1
-WHERE ID = $2
+SET views = views + 1
+WHERE ID = $1
 RETURNING id
 `
 
@@ -456,11 +454,9 @@ func (db *PsqlDB) IncrementMapView(mapID int64) (int64, error) {
 		return 0, errors.New("psql: cannot update map with unassigned map ID")
 	}
 
-	now := time.Now().UnixNano()
-
 	var updatedID int64
 
-	err := QueryRow(db.maps.view, now, mapID).
+	err := QueryRow(db.maps.view, mapID).
 		Scan(&updatedID)
 
 	if err != nil {

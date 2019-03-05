@@ -84,7 +84,7 @@ type Map struct {
 	UpdatedAt    int            `json:"updated_at"`
 	Name         string         `json:"name"`
 	Description  DescriptionMap `json:"description"`
-	DownloadCode string         `json:"downloadCode"`
+	DownloadCode string         `json:"download_code"`
 	Type         string         `json:"type"`
 	UserID       int64          `json:"userId" sql:"type:integer REFERENCES users(id)"`
 	Views        int            `json:"views"`
@@ -97,7 +97,7 @@ func (m *Map) Merge(u *Map) {
 		m.Name = u.Name
 
 		// need to generate a new slug
-		slug := strings.Replace(m.Name, " ", "-", -1) + "-" + xid.New().String()
+		slug := strings.ToLower(strings.Replace(m.Name, " ", "-", -1)) + "-" + xid.New().String()
 
 		m.Slug = slug
 	}
@@ -133,6 +133,7 @@ type SortOptions struct {
 	Limit   int
 	Offset  int
 	OrderBy string
+	Type    string
 }
 
 type DescriptionMap map[string]interface{}

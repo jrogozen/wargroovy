@@ -1,11 +1,14 @@
 package maps
 
 import (
+	"fmt"
 	"github.com/jrogozen/wargroovy/internal/config"
 	"github.com/jrogozen/wargroovy/schema"
 	u "github.com/jrogozen/wargroovy/utils"
+	// log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 //Validate validates map fields for map creation
@@ -38,6 +41,27 @@ func ValidateUpdate(configuration *config.Config, claims map[string]interface{},
 	return u.Message(true, "Valid"), true
 }
 
+//TODO: refactor this to be used elsewhere
+func appendToQueryCondition(s string, append string) string {
+	if s == "" {
+		return fmt.Sprintf("where %s", append)
+	}
+
+	return fmt.Sprintf("%s OR %s", s, append)
+}
+
+func constructTypeQueryString(types []string) string {
+	const identifier = "m.type = '%s'"
+
+	typeQueryString := ""
+
+	for _, t := range types {
+		typeQueryString = appendToQueryCondition(typeQueryString, fmt.Sprintf(identifier, t))
+	}
+
+	return typeQueryString
+}
+
 //GetSortOptions parse queryParams and return correctly typed SortOptions
 func GetSortOptions(r *http.Request) *schema.SortOptions {
 	options := &schema.SortOptions{}
@@ -45,6 +69,7 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	limit := u.StringWithDefault(r.URL.Query().Get("limit"), "20")
 	offset := u.StringWithDefault(r.URL.Query().Get("offset"), "0")
 	orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "created_descending")
+	t := u.StringWithDefault(r.URL.Query().Get("type"), "all")
 
 	limitInt, _ := strconv.Atoi(limit)
 	offsetInt, _ := strconv.Atoi(offset)
@@ -63,15 +88,31 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 		orderQueryString = "views asc"
 	case "views_descending":
 		orderQueryString = "views desc"
-	case "alphabetical_asc":
+	case "alphabetical_ascending":
 		orderQueryString = "name asc"
-	case "alphabetical_desc":
+	case "alphabetical_descending":
 		orderQueryString = "name desc"
 	default:
 		orderQueryString = "created_at desc"
 	}
 
 	options.OrderBy = orderQueryString
+
+	typeQueryString := ""
+
+	if t == "all" {
+		typeQueryString = "WHERE m.type is not null"
+	} else {
+		filterFunc := func(s string) bool {
+			return strings.Contains(s, "scenario") || strings.Contains(s, "skirmish") || strings.Contains(s, "puzzle")
+		}
+
+		types := u.Choose(strings.Split(t, ","), filterFunc)
+
+		typeQueryString = constructTypeQueryString(types)
+	}
+
+	options.Type = typeQueryString
 
 	return options
 }
