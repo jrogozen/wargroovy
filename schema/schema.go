@@ -90,6 +90,7 @@ type Map struct {
 	Views        int            `json:"views"`
 	Photos       []string       `json:"photos"`
 	Slug         string         `json:"slug"`
+	Author       string         `json:"author"`
 }
 
 func (m *Map) Merge(u *Map) {

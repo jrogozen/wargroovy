@@ -67,8 +67,8 @@ photos have one map
 - [x] increment map view
 - [x] make work with draft-js data structure
 - [x] filter by type for map list
+- [x] return author for map info (userId -> username)
 - [ ] log a billion times more
-- [ ] return author for map info (userId -> username)
 
 
 ### future todo

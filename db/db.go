@@ -287,14 +287,16 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	return insertedID, nil
 }
 
-const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos
+const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
 	from map_photos
 	GROUP BY map_id
 ) p ON m.id = map_id
-WHERE id = $1
+left join users u
+on m.user_id = u.id
+WHERE m.id = $1
 `
 
 func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
@@ -311,13 +313,15 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 	return m, nil
 }
 
-const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos
+const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
 	from map_photos
 	GROUP BY map_id
 ) p ON m.id = map_id
+left join users u
+on m.user_id = u.id
 WHERE slug = $1
 `
 
@@ -335,13 +339,15 @@ func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
 	return m, nil
 }
 
-const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos
+const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username
 	from maps m
 	left join (
 		select map_id, string_agg(url, ',') AS photos
 		from map_photos
 		GROUP BY map_id
 	) p ON m.id = map_id
+	left join users u
+	on m.user_id = u.id
 	%s
 	order by %s
 	limit %d
@@ -509,6 +515,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		views        int
 		slug         string
 		photos       sql.NullString
+		username     sql.NullString
 	)
 
 	if err := s.Scan(
@@ -523,16 +530,24 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		&views,
 		&slug,
 		&photos,
+		&username,
 	); err != nil {
 		return nil, err
 	}
 
 	var photosArray []string
+	var author string
 
 	if photos.Valid {
 		photosArray = strings.Split(photos.String, ",")
 	} else {
 		photosArray = make([]string, 0)
+	}
+
+	if username.Valid {
+		author = username.String
+	} else {
+		author = "anonymous"
 	}
 
 	m := &schema.Map{
@@ -547,6 +562,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Views:        views,
 		Slug:         slug,
 		Photos:       photosArray,
+		Author:       author,
 	}
 
 	return m, nil
