@@ -173,3 +173,23 @@ func Delete(configuration *config.Config, claims map[string]interface{}, mapIDSt
 
 	return response, http.StatusOK
 }
+
+func Rate(configuration *config.Config, claims map[string]interface{}, mapIDString string, rating int64) (map[string]interface{}, int) {
+	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
+	userID, err := u.GetUserIdFromClaims(claims)
+
+	if err != nil {
+		return u.Message(false, err.Error()), http.StatusForbidden
+	}
+
+	insertedRating, err := configuration.DB.RateMap(mapID, userID, rating)
+
+	if err != nil {
+		return u.Message(false, err.Error()), http.StatusBadRequest
+	}
+
+	response := u.Message(true, "Map rated")
+	response["rating"] = insertedRating
+
+	return response, http.StatusOK
+}

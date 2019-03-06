@@ -11,6 +11,7 @@
 
 #### /map
 - [x] - POST /map
+- [ ] - POST /map/{mapId}/rate
 - [x] - GET /map/{mapId}
 - [x] - GET /map/bySlug/{slug}
 - [X] - GET /map/list - list of compaigns with queryParam
@@ -19,6 +20,7 @@
 
 #### /photo
 - [x] - POST /photo
+
 
 
 ### relationships

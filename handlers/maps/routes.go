@@ -18,6 +18,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 		router.Put("/{mapId}", EditAMap(configuration))
 		router.Delete("/{mapId}/photo", DeleteMapPhoto(configuration))
 		router.Delete("/{mapId}", DeleteAMap(configuration))
+		router.Post("/{mapId}/rate", RateAMap(configuration))
 
 	})
 

@@ -162,3 +162,34 @@ func DeleteAMap(configuration *config.Config) http.HandlerFunc {
 		return
 	})
 }
+
+func RateAMap(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mapIDString := chi.URLParam(r, "mapId")
+
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, err := jwtauth.FromContext(r.Context())
+
+		if err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			u.Respond(w, r, u.Message(false, "Error authorizing user"))
+			return
+		}
+
+		type ratingBody struct {
+			Rating int64 `json:"rating"`
+		}
+
+		decodedBody := &ratingBody{}
+
+		err = render.DecodeJSON(r.Body, decodedBody)
+
+		log.WithField("decodedRating", decodedBody.Rating).Info("Decoded rating")
+
+		resp, status := Rate(configuration, claims, mapIDString, decodedBody.Rating)
+
+		w.WriteHeader(status)
+		u.Respond(w, r, resp)
+		return
+	})
+}

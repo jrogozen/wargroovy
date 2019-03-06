@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"github.com/go-chi/jwtauth"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -21,6 +22,16 @@ func AttachAuthCookie(token string, w http.ResponseWriter) {
 	}
 
 	http.SetCookie(w, responseCookie)
+}
+
+func GetUserIdFromClaims(claims map[string]interface{}) (int64, error) {
+	if claims["UserID"] == nil {
+		return 0, errors.New("No valid UserID found in claims")
+	}
+
+	actualUserID := int64(claims["UserID"].(float64))
+
+	return actualUserID, nil
 }
 
 func IsUserAuthorized(attemptedUserID int64, claims map[string]interface{}) (map[string]interface{}, bool) {

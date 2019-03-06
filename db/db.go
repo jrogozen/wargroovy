@@ -41,6 +41,7 @@ type mapSQL struct {
 	update       *sql.Stmt
 	delete       *sql.Stmt
 	view         *sql.Stmt
+	rate         *sql.Stmt
 }
 
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
@@ -75,6 +76,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapPhotoDelete *sql.Stmt
 	var mapDelete *sql.Stmt
 	var mapView *sql.Stmt
+	var mapRate *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -124,6 +126,10 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare map view: %v", err)
 	}
 
+	if mapRate, err = db.Conn.Prepare(rateMapStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare rate map error: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
@@ -137,6 +143,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.deletePhoto = mapPhotoDelete
 	db.maps.delete = mapDelete
 	db.maps.view = mapView
+	db.maps.rate = mapRate
 
 	return db, nil
 }
@@ -470,6 +477,38 @@ func (db *PsqlDB) IncrementMapView(mapID int64) (int64, error) {
 	}
 
 	return updatedID, nil
+}
+
+const rateMapStatement = `insert into map_ratings (
+	map_id, user_id, rating
+) values ($1, $2, $3) returning rating`
+
+func (db *PsqlDB) RateMap(mapID int64, userID int64, rating int64) (int64, error) {
+	if mapID == 0 {
+		return 0, errors.New("psql: cannot update map with unassigned map ID")
+	}
+
+	if userID == 0 {
+		return 0, errors.New("psql: cannot rate map with unassigned user ID")
+	}
+
+	var insertedRating int64
+
+	// only allow ratings to be saved up to 1
+	if rating >= 1 {
+		rating = 1
+	} else {
+		rating = 0
+	}
+
+	err := QueryRow(db.maps.rate, mapID, userID, rating).
+		Scan(&insertedRating)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return insertedRating, nil
 }
 
 type rowScanner interface {
