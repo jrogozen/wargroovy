@@ -80,7 +80,9 @@ photos have one map
 ### tags feature
 - [ ] /tags post
 - [ ] /tags get most popular tags
-- [ ] map_tags for map_id, tag_id
+- [x] map_tags for map_id, tag_id
+- [ ] return tags per map, map list
+- [ ] map list filter by tags 
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
@@ -89,7 +91,6 @@ photos have one map
 - [ ] public issue repo on github
 - [ ] ML model to flag images that are not associated with wargroove
 - [ ] add map comments
-- [ ] add map tags
 - [ ] jwt auth the photo upload api (requires username/email-less user creation)
 - [ ] delete user
 
