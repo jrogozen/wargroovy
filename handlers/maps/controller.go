@@ -45,8 +45,11 @@ func CreateAMap(configuration *config.Config) http.HandlerFunc {
 
 func GetAMap(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, _ := jwtauth.FromContext(r.Context())
+
 		mapID := chi.URLParam(r, "mapId")
-		response, status := FindMap(configuration, mapID)
+		response, status := FindMap(configuration, mapID, claims)
 
 		w.WriteHeader(status)
 		u.Respond(w, r, response)
@@ -56,9 +59,12 @@ func GetAMap(configuration *config.Config) http.HandlerFunc {
 
 func GetAMapBySlug(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, _ := jwtauth.FromContext(r.Context())
+
 		slug := chi.URLParam(r, "slug")
 
-		response, status := FindMapBySlug(configuration, slug)
+		response, status := FindMapBySlug(configuration, slug, claims)
 
 		w.WriteHeader(status)
 		u.Respond(w, r, response)

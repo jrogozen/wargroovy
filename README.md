@@ -72,6 +72,15 @@ photos have one map
 - [x] return author for map info (userId -> username)
 - [ ] log a billion times more
 
+### ratings feature
+- [x] add post rating api
+- [x] get map apis should return a user's vote on a map
+- [x] list map apis should return aggregate score per map
+
+### tags feature
+- [ ] /tags post
+- [ ] /tags get most popular tags
+- [ ] map_tags for map_id, tag_id
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)
@@ -80,7 +89,6 @@ photos have one map
 - [ ] public issue repo on github
 - [ ] ML model to flag images that are not associated with wargroove
 - [ ] add map comments
-- [ ] add map ratings
 - [ ] add map tags
 - [ ] jwt auth the photo upload api (requires username/email-less user creation)
 - [ ] delete user

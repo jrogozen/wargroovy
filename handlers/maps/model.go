@@ -49,7 +49,7 @@ func UpdateMap(configuration *config.Config, claims map[string]interface{}, mapI
 	return response, http.StatusOK
 }
 
-func FindMap(configuration *config.Config, mapIDString string) (map[string]interface{}, int) {
+func FindMap(configuration *config.Config, mapIDString string, claims map[string]interface{}) (map[string]interface{}, int) {
 	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
 
 	m, err := configuration.DB.GetMap(mapID)
@@ -64,6 +64,24 @@ func FindMap(configuration *config.Config, mapIDString string) (map[string]inter
 		log.WithField("mapId", mapID).Warn("Could not increment map view")
 	}
 
+	if claims["UserID"] != nil {
+		userID := int64(claims["UserID"].(float64))
+
+		rating, err := configuration.DB.GetMapUserRating(mapID, userID)
+
+		if err == nil {
+			m.UserRating = "thumbs_down"
+
+			if rating > 1 {
+				m.UserRating = "thumbs_up"
+			}
+		} else {
+			m.UserRating = "not_rated"
+		}
+	} else {
+		m.UserRating = "not_rated"
+	}
+
 	response := u.Message(true, "Map found")
 	response["map"] = m
 
@@ -71,11 +89,29 @@ func FindMap(configuration *config.Config, mapIDString string) (map[string]inter
 
 }
 
-func FindMapBySlug(configuration *config.Config, slug string) (map[string]interface{}, int) {
+func FindMapBySlug(configuration *config.Config, slug string, claims map[string]interface{}) (map[string]interface{}, int) {
 	m, err := configuration.DB.GetMapBySlug(slug)
 
 	if err != nil {
 		return u.Message(false, err.Error()), http.StatusBadRequest
+	}
+
+	if claims["UserID"] != nil {
+		userID := int64(claims["UserID"].(float64))
+
+		rating, err := configuration.DB.GetMapUserRating(m.ID, userID)
+
+		if err == nil {
+			m.UserRating = "thumbs_down"
+
+			if rating > 1 {
+				m.UserRating = "thumbs_up"
+			}
+		} else {
+			m.UserRating = "not_rated"
+		}
+	} else {
+		m.UserRating = "not_rated"
 	}
 
 	_, err = configuration.DB.IncrementMapView(m.ID)

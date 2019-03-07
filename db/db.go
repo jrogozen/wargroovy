@@ -31,17 +31,18 @@ type userSQL struct {
 }
 
 type mapSQL struct {
-	insert       *sql.Stmt
-	insertPhotos *sql.Stmt
-	get          *sql.Stmt
-	getBySlug    *sql.Stmt
-	getPhotos    *sql.Stmt
-	deletePhoto  *sql.Stmt
-	listBy       *sql.Stmt
-	update       *sql.Stmt
-	delete       *sql.Stmt
-	view         *sql.Stmt
-	rate         *sql.Stmt
+	insert        *sql.Stmt
+	insertPhotos  *sql.Stmt
+	get           *sql.Stmt
+	getBySlug     *sql.Stmt
+	getPhotos     *sql.Stmt
+	deletePhoto   *sql.Stmt
+	listBy        *sql.Stmt
+	update        *sql.Stmt
+	delete        *sql.Stmt
+	view          *sql.Stmt
+	rate          *sql.Stmt
+	getUserRating *sql.Stmt
 }
 
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
@@ -77,6 +78,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapDelete *sql.Stmt
 	var mapView *sql.Stmt
 	var mapRate *sql.Stmt
+	var mapUserRating *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -130,6 +132,10 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare rate map error: %v", err)
 	}
 
+	if mapUserRating, err = db.Conn.Prepare(getUserRatingForMap); err != nil {
+		return nil, fmt.Errorf("psql: prepare map user rating: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
@@ -144,6 +150,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.delete = mapDelete
 	db.maps.view = mapView
 	db.maps.rate = mapRate
+	db.maps.getUserRating = mapUserRating
 
 	return db, nil
 }
@@ -294,13 +301,18 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	return insertedID, nil
 }
 
-const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username
+const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
 	from map_photos
 	GROUP BY map_id
 ) p ON m.id = map_id
+left join (
+	select map_id, round(cast(sum(rating) as decimal) / (cast(count(rating) as decimal) * 2), 2) * 100 as rating
+	from map_ratings
+	group by map_id
+) r on m.id = r.map_id
 left join users u
 on m.user_id = u.id
 WHERE m.id = $1
@@ -320,13 +332,18 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 	return m, nil
 }
 
-const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username
+const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
 	from map_photos
 	GROUP BY map_id
 ) p ON m.id = map_id
+left join (
+	select map_id, round(cast(sum(rating) as decimal) / (cast(count(rating) as decimal) * 2), 2) * 100 as rating
+	from map_ratings
+	group by map_id
+) r on m.id = r.map_id
 left join users u
 on m.user_id = u.id
 WHERE slug = $1
@@ -346,19 +363,24 @@ func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
 	return m, nil
 }
 
-const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username
-	from maps m
-	left join (
-		select map_id, string_agg(url, ',') AS photos
-		from map_photos
-		GROUP BY map_id
-	) p ON m.id = map_id
-	left join users u
-	on m.user_id = u.id
-	%s
-	order by %s
-	limit %d
-	offset %d
+const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating
+from maps m
+left join (
+	select map_id, string_agg(url, ',') AS photos
+	from map_photos
+	GROUP BY map_id
+) p ON m.id = map_id
+left join (
+	select map_id, round(cast(sum(rating) as decimal) / (cast(count(rating) as decimal) * 2), 2) * 100 as rating
+	from map_ratings
+	group by map_id
+) r on m.id = r.map_id
+left join users u
+on m.user_id = u.id
+%s
+order by %s
+limit %d
+offset %d
 `
 
 func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) {
@@ -494,11 +516,11 @@ func (db *PsqlDB) RateMap(mapID int64, userID int64, rating int64) (int64, error
 
 	var insertedRating int64
 
-	// only allow ratings to be saved up to 1
-	if rating >= 1 {
-		rating = 1
+	// 2 is thumbs up, 1 is thumbs down
+	if rating >= 2 {
+		rating = 2
 	} else {
-		rating = 0
+		rating = 1
 	}
 
 	err := QueryRow(db.maps.rate, mapID, userID, rating).
@@ -509,6 +531,29 @@ func (db *PsqlDB) RateMap(mapID int64, userID int64, rating int64) (int64, error
 	}
 
 	return insertedRating, nil
+}
+
+const getUserRatingForMap = `select rating from map_ratings where user_id = $1 and map_id = $2`
+
+func (db *PsqlDB) GetMapUserRating(mapID int64, userID int64) (int64, error) {
+	if mapID == 0 {
+		return 0, errors.New("psql: cannot update map with unassigned map ID")
+	}
+
+	if userID == 0 {
+		return 0, errors.New("psql: cannot rate map with unassigned user ID")
+	}
+
+	var rating int64
+
+	err := QueryRow(db.maps.getUserRating, userID, mapID).
+		Scan(&rating)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return rating, nil
 }
 
 type rowScanner interface {
@@ -555,6 +600,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		slug         string
 		photos       sql.NullString
 		username     sql.NullString
+		rating       sql.NullFloat64
 	)
 
 	if err := s.Scan(
@@ -570,12 +616,14 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		&slug,
 		&photos,
 		&username,
+		&rating,
 	); err != nil {
 		return nil, err
 	}
 
 	var photosArray []string
 	var author string
+	var ratingFloat float64
 
 	if photos.Valid {
 		photosArray = strings.Split(photos.String, ",")
@@ -587,6 +635,12 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		author = username.String
 	} else {
 		author = "anonymous"
+	}
+
+	if rating.Valid {
+		ratingFloat = rating.Float64
+	} else {
+		ratingFloat = 0
 	}
 
 	m := &schema.Map{
@@ -602,6 +656,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Slug:         slug,
 		Photos:       photosArray,
 		Author:       author,
+		Rating:       ratingFloat,
 	}
 
 	return m, nil

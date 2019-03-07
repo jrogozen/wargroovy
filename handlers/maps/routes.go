@@ -23,6 +23,8 @@ func Routes(configuration *config.Config) *chi.Mux {
 	})
 
 	router.Group(func(router chi.Router) {
+		router.Use(jwtauth.Verifier(configuration.TokenAuth))
+
 		router.Get("/list", GetMapList(configuration))
 		router.Get("/bySlug/{slug}", GetAMapBySlug(configuration))
 		router.Get("/{mapId}", GetAMap(configuration))
