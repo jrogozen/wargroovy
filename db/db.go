@@ -43,6 +43,7 @@ type mapSQL struct {
 	view          *sql.Stmt
 	rate          *sql.Stmt
 	getUserRating *sql.Stmt
+	insertTag     *sql.Stmt
 }
 
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
@@ -79,6 +80,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapView *sql.Stmt
 	var mapRate *sql.Stmt
 	var mapUserRating *sql.Stmt
+	var mapInsertTag *sql.Stmt
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)
@@ -132,8 +134,12 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare rate map error: %v", err)
 	}
 
-	if mapUserRating, err = db.Conn.Prepare(getUserRatingForMap); err != nil {
+	if mapUserRating, err = db.Conn.Prepare(getUserRatingForMapStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare map user rating: %v", err)
+	}
+
+	if mapInsertTag, err = db.Conn.Prepare(insertMapTagStatement); err != nil {
+		return nil, fmt.Errorf("psl: prepare insert map tag: %v", err)
 	}
 
 	db.users.insert = userInsert
@@ -151,6 +157,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	db.maps.view = mapView
 	db.maps.rate = mapRate
 	db.maps.getUserRating = mapUserRating
+	db.maps.insertTag = mapInsertTag
 
 	return db, nil
 }
@@ -268,10 +275,16 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	slug := strings.ToLower(strings.Replace(m.Name, " ", "-", -1)) + "-" + xid.New().String()
 
 	var insertedID int64
+	var err error
 
-	err := QueryRow(db.maps.insert,
-		now, now, m.Name, m.Description, m.DownloadCode, m.Type, 0, slug, m.UserID).
-		Scan(&insertedID)
+	//TODO: more idomatic way of doing this
+	if len(m.Description) == 0 {
+		err = QueryRow(db.maps.insert, now, now, m.Name, nil, m.DownloadCode, m.Type, 0, slug, m.UserID).
+			Scan(&insertedID)
+	} else {
+		err = QueryRow(db.maps.insert, now, now, m.Name, m.Description, m.DownloadCode, m.Type, 0, slug, m.UserID).
+			Scan(&insertedID)
+	}
 
 	if err != nil {
 		return 0, fmt.Errorf("psql: could not create map: %v", err)
@@ -297,11 +310,34 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 			}
 		}
 	}
+	if len(m.Tags) > 0 {
+		for _, tag := range m.Tags {
+			tagToInsert := strings.ToLower(tag)
+
+			var insertedTag string
+
+			err = QueryRow(db.maps.insertTag, insertedID, tagToInsert).
+				Scan(&insertedTag)
+
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+					"tag":   tagToInsert,
+					"mapID": insertedID,
+				}).Error("Could not save tag")
+			} else {
+				log.WithFields(log.Fields{
+					"tag":   tagToInsert,
+					"mapID": insertedID,
+				}).Info("Tag saved")
+			}
+		}
+	}
 
 	return insertedID, nil
 }
 
-const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating
+const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -313,6 +349,11 @@ left join (
 	from map_ratings
 	group by map_id
 ) r on m.id = r.map_id
+left join (
+	select map_id, string_agg(tag_name, ',') as tags
+	from map_tags
+	group by map_id
+) t on m.id = t.map_id
 left join users u
 on m.user_id = u.id
 WHERE m.id = $1
@@ -332,7 +373,7 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 	return m, nil
 }
 
-const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating
+const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -344,6 +385,11 @@ left join (
 	from map_ratings
 	group by map_id
 ) r on m.id = r.map_id
+left join (
+	select map_id, string_agg(tag_name, ',') as tags
+	from map_tags
+	group by map_id
+) t on m.id = t.map_id
 left join users u
 on m.user_id = u.id
 WHERE slug = $1
@@ -363,7 +409,7 @@ func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
 	return m, nil
 }
 
-const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating
+const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
 from maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -375,8 +421,14 @@ left join (
 	from map_ratings
 	group by map_id
 ) r on m.id = r.map_id
+left join (
+	select map_id, string_agg(tag_name, ',') as tags
+	from map_tags
+	group by map_id
+) t on m.id = t.map_id
 left join users u
 on m.user_id = u.id
+%s
 %s
 order by %s
 limit %d
@@ -385,13 +437,14 @@ offset %d
 
 func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) {
 	// order by is dynamic and cannot be prepared
-	qtext := fmt.Sprintf(listByMapStatement, options.Type, options.OrderBy, options.Limit, options.Offset)
+	qtext := fmt.Sprintf(listByMapStatement, options.Type, options.Tags, options.OrderBy, options.Limit, options.Offset)
 
 	log.WithFields(log.Fields{
 		"type":    options.Type,
 		"orderBy": options.OrderBy,
 		"limit":   options.Limit,
 		"offset":  options.Offset,
+		"tags":    options.Tags,
 	}).Info("listing map with options")
 
 	rows, err := db.Conn.Query(qtext)
@@ -533,7 +586,7 @@ func (db *PsqlDB) RateMap(mapID int64, userID int64, rating int64) (int64, error
 	return insertedRating, nil
 }
 
-const getUserRatingForMap = `select rating from map_ratings where user_id = $1 and map_id = $2`
+const getUserRatingForMapStatement = `select rating from map_ratings where user_id = $1 and map_id = $2`
 
 func (db *PsqlDB) GetMapUserRating(mapID int64, userID int64) (int64, error) {
 	if mapID == 0 {
@@ -558,6 +611,27 @@ func (db *PsqlDB) GetMapUserRating(mapID int64, userID int64) (int64, error) {
 
 type rowScanner interface {
 	Scan(dest ...interface{}) error
+}
+
+const insertMapTagStatement = `insert into map_tags (
+	map_id, tag_name
+) values ($1, $2) returning tag_name`
+
+func (db *PsqlDB) AddMapTag(mapID int64, name string) (string, error) {
+	if name == "" {
+		return "", errors.New("psql: cannot create tag with blank name")
+	}
+
+	var insertedTag string
+
+	err := QueryRow(db.maps.insertTag, mapID, name).
+		Scan(&insertedTag)
+
+	if err != nil {
+		return "", err
+	}
+
+	return insertedTag, nil
 }
 
 func scanUser(s rowScanner) (*schema.User, error) {
@@ -601,6 +675,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		photos       sql.NullString
 		username     sql.NullString
 		rating       sql.NullFloat64
+		tags         sql.NullString
 	)
 
 	if err := s.Scan(
@@ -617,6 +692,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		&photos,
 		&username,
 		&rating,
+		&tags,
 	); err != nil {
 		return nil, err
 	}
@@ -624,11 +700,18 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 	var photosArray []string
 	var author string
 	var ratingFloat float64
+	var tagsArray []string
 
 	if photos.Valid {
 		photosArray = strings.Split(photos.String, ",")
 	} else {
 		photosArray = make([]string, 0)
+	}
+
+	if tags.Valid {
+		tagsArray = strings.Split(tags.String, ",")
+	} else {
+		tagsArray = make([]string, 0)
 	}
 
 	if username.Valid {
@@ -657,6 +740,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Photos:       photosArray,
 		Author:       author,
 		Rating:       ratingFloat,
+		Tags:         tagsArray,
 	}
 
 	return m, nil

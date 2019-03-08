@@ -78,11 +78,10 @@ photos have one map
 - [x] list map apis should return aggregate score per map
 
 ### tags feature
-- [ ] /tags post
-- [ ] /tags get most popular tags
-- [x] map_tags for map_id, tag_id
-- [ ] return tags per map, map list
-- [ ] map list filter by tags 
+- [ ] /map/tags get most popular tags
+- [x] map_tags for map_id, tag_name
+- [x] return tags per map, map list
+- [x] map list filter by tags 
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)

@@ -93,6 +93,7 @@ type Map struct {
 	Author       string         `json:"author"`
 	Rating       float64        `json:"rating"`
 	UserRating   string         `json:"user_rating"`
+	Tags         []string       `json:"tags"`
 }
 
 func (m *Map) Merge(u *Map) {
@@ -137,12 +138,14 @@ type SortOptions struct {
 	Offset  int
 	OrderBy string
 	Type    string
+	Tags    string
 }
 
 type DescriptionMap map[string]interface{}
 
 func (d DescriptionMap) Value() (driver.Value, error) {
 	j, err := json.Marshal(d)
+
 	return j, err
 }
 

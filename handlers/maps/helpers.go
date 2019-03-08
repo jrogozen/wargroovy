@@ -50,6 +50,14 @@ func appendToQueryCondition(s string, append string) string {
 	return fmt.Sprintf("%s OR %s", s, append)
 }
 
+func appendToExistingQueryCondition(s string, append string) string {
+	if s == "" {
+		return fmt.Sprintf("and %s", append)
+	}
+
+	return fmt.Sprintf("%s OR %s", s, append)
+}
+
 func constructTypeQueryString(types []string) string {
 	const identifier = "m.type = '%s'"
 
@@ -62,6 +70,18 @@ func constructTypeQueryString(types []string) string {
 	return typeQueryString
 }
 
+func constructTagQueryString(tags []string) string {
+	const identifierStart = "tags like '%"
+	const identifierEnd = "%'"
+	tagQueryString := ""
+
+	for _, tg := range tags {
+		tagQueryString = appendToExistingQueryCondition(tagQueryString, fmt.Sprint(identifierStart, tg, identifierEnd))
+	}
+
+	return tagQueryString
+}
+
 //GetSortOptions parse queryParams and return correctly typed SortOptions
 func GetSortOptions(r *http.Request) *schema.SortOptions {
 	options := &schema.SortOptions{}
@@ -70,6 +90,7 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	offset := u.StringWithDefault(r.URL.Query().Get("offset"), "0")
 	orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "created_descending")
 	t := u.StringWithDefault(r.URL.Query().Get("type"), "all")
+	tg := u.StringWithDefault(r.URL.Query().Get("tags"), "all")
 
 	limitInt, _ := strconv.Atoi(limit)
 	offsetInt, _ := strconv.Atoi(offset)
@@ -113,6 +134,16 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	}
 
 	options.Type = typeQueryString
+
+	tagsQueryString := ""
+
+	if tg != "all" {
+		tags := strings.Split(tg, ",")
+
+		tagsQueryString = constructTagQueryString(tags)
+	}
+
+	options.Tags = tagsQueryString
 
 	return options
 }
