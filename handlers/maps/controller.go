@@ -83,6 +83,18 @@ func GetMapList(configuration *config.Config) http.HandlerFunc {
 	})
 }
 
+func GetMapListTags(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sortOptions := GetTagSortOptions(r)
+
+		response, status := FindMapListTags(configuration, sortOptions)
+
+		w.WriteHeader(status)
+		u.Respond(w, r, response)
+		return
+	})
+}
+
 func EditAMap(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mapIDString := chi.URLParam(r, "mapId")
@@ -199,38 +211,3 @@ func RateAMap(configuration *config.Config) http.HandlerFunc {
 		return
 	})
 }
-
-// func AddAMapTag(configuration *config.Config) http.HandlerFunc {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		mapIDString := chi.URLParam(r, "mapId")
-
-// 		// requires jwt-auth middleware to be used in part of the router stack
-// 		_, claims, err := jwtauth.FromContext(r.Context())
-
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusForbidden)
-// 			u.Respond(w, r, u.Message(false, "Error authorizing user"))
-// 			return
-// 		}
-
-// 		type tagBody struct {
-// 			Name string `json:"name"`
-// 		}
-
-// 		decodedBody := &tagBody{}
-
-// 		err = render.DecodeJSON(r.Body, decodedBody)
-
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusBadRequest)
-// 			u.Respond(w, r, u.Message(false, "Error adding map tag"))
-// 		}
-
-// 		resp, status := AddMapTag(configuration, claims, mapIDString, decodedBody.Name)
-
-// 		w.WriteHeader(status)
-// 		u.Respond(w, r, resp)
-
-// 		return
-// 	})
-// }

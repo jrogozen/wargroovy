@@ -141,6 +141,16 @@ type SortOptions struct {
 	Tags    string
 }
 
+type TagSortOptions struct {
+	Limit   int
+	OrderBy string
+}
+
+type TagCount struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 type DescriptionMap map[string]interface{}
 
 func (d DescriptionMap) Value() (driver.Value, error) {

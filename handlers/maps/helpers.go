@@ -82,6 +82,36 @@ func constructTagQueryString(tags []string) string {
 	return tagQueryString
 }
 
+func GetTagSortOptions(r *http.Request) *schema.TagSortOptions {
+	options := &schema.TagSortOptions{}
+
+	limit := u.StringWithDefault(r.URL.Query().Get("limit"), "20")
+	orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "count_descending")
+
+	limitInt, _ := strconv.Atoi(limit)
+
+	options.Limit = limitInt
+
+	orderQueryString := ""
+
+	switch orderBy {
+	case "count_descending":
+		orderQueryString = "count desc"
+	case "count_ascending":
+		orderQueryString = "count asc"
+	case "name_ascending":
+		orderQueryString = "tag_name asc"
+	case "name_descending":
+		orderQueryString = "tag_name desc"
+	default:
+		orderQueryString = "count desc"
+	}
+
+	options.OrderBy = orderQueryString
+
+	return options
+}
+
 //GetSortOptions parse queryParams and return correctly typed SortOptions
 func GetSortOptions(r *http.Request) *schema.SortOptions {
 	options := &schema.SortOptions{}
@@ -113,6 +143,10 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 		orderQueryString = "name asc"
 	case "alphabetical_descending":
 		orderQueryString = "name desc"
+	case "rating_ascending":
+		orderQueryString = "rating asc nulls first"
+	case "rating_descending":
+		orderQueryString = "rating desc nulls last"
 	default:
 		orderQueryString = "created_at desc"
 	}

@@ -230,33 +230,17 @@ func Rate(configuration *config.Config, claims map[string]interface{}, mapIDStri
 	return response, http.StatusOK
 }
 
-// func AddMapTag(configuration *config.Config, claims map[string]interface{}, mapIDString string, name string) (map[string]interface{}, int) {
-// 	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
+func FindMapListTags(configuration *config.Config, options *schema.TagSortOptions) (map[string]interface{}, int) {
+	tags, err := configuration.DB.GetMapListTags(options.OrderBy, options.Limit)
 
-// 	originalMap, err := configuration.DB.GetMap(mapID)
+	if err != nil {
+		log.Error(err)
 
-// 	if err != nil {
-// 		return u.Message(false, err.Error()), http.StatusBadRequest
-// 	}
+		return u.Message(false, err.Error()), http.StatusBadRequest
+	}
 
-// 	if resp, ok := ValidateUpdate(configuration, claims, originalMap); !ok {
-// 		return resp, http.StatusForbidden
-// 	}
+	response := u.Message(true, "Tags found")
+	response["tags"] = tags
 
-// 	insertedTag, err := configuration.DB.AddMapTag(mapID, name)
-
-// 	if err != nil {
-// 		return u.Message(false, err.Error()), http.StatusBadRequest
-// 	}
-
-// 	response := u.Message(true, "Map tag added")
-// 	response["tag"] = struct {
-// 		name string
-// 		id   int64
-// 	}{
-// 		name: name,
-// 		id:   insertedTag,
-// 	}
-
-// 	return response, http.StatusOK
-// }
+	return response, http.StatusOK
+}

@@ -11,7 +11,7 @@
 
 #### /map
 - [x] - POST /map
-- [ ] - POST /map/{mapId}/rate
+- [x] - POST /map/{mapId}/rate
 - [x] - GET /map/{mapId}
 - [x] - GET /map/bySlug/{slug}
 - [X] - GET /map/list - list of compaigns with queryParam
@@ -75,13 +75,20 @@ photos have one map
 ### ratings feature
 - [x] add post rating api
 - [x] get map apis should return a user's vote on a map
+- [x] sort map list by rating
 - [x] list map apis should return aggregate score per map
 
 ### tags feature
-- [ ] /map/tags get most popular tags
+- [x] /map/tags get most popular tags
 - [x] map_tags for map_id, tag_name
 - [x] return tags per map, map list
-- [x] map list filter by tags 
+- [x] map list filter by tags
+
+### map_comments feature
+comments can nest max 2 levels (main thread, reply)
+- [ ] post comment
+- [ ] edit comment
+- [ ] mapById, mapBySlug includes comments
 
 ### future todo
 - [x] replace gorm with raw sql queries [example](https://github.com/GoogleCloudPlatform/golang-samples/blob/master/appengine/go11x/cloudsql/cloudsql.go)

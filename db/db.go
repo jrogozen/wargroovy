@@ -139,7 +139,7 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	}
 
 	if mapInsertTag, err = db.Conn.Prepare(insertMapTagStatement); err != nil {
-		return nil, fmt.Errorf("psl: prepare insert map tag: %v", err)
+		return nil, fmt.Errorf("psql: prepare insert map tag: %v", err)
 	}
 
 	db.users.insert = userInsert
@@ -634,6 +634,40 @@ func (db *PsqlDB) AddMapTag(mapID int64, name string) (string, error) {
 	return insertedTag, nil
 }
 
+const getMapTagsStatement = `select tag_name, COUNT(*)
+from map_tags
+group by tag_name
+order by %s
+limit %d
+`
+
+func (db *PsqlDB) GetMapListTags(orderBy string, limit int) ([]*schema.TagCount, error) {
+	// order by is dynamic and cannot be prepared
+	qtext := fmt.Sprintf(getMapTagsStatement, orderBy, limit)
+
+	rows, err := db.Conn.Query(qtext)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var tags []*schema.TagCount
+
+	for rows.Next() {
+		t, err := scanTag(rows)
+
+		if err != nil {
+			return nil, fmt.Errorf("psql: could not read row: %v", err)
+		}
+
+		tags = append(tags, t)
+	}
+
+	return tags, nil
+}
+
 func scanUser(s rowScanner) (*schema.User, error) {
 	var (
 		id        int64
@@ -756,6 +790,27 @@ func scanPhoto(s rowScanner) (string, error) {
 	}
 
 	return url, nil
+}
+
+func scanTag(t rowScanner) (*schema.TagCount, error) {
+	var (
+		tagName string
+		count   int
+	)
+
+	if err := t.Scan(
+		&tagName,
+		&count,
+	); err != nil {
+		return nil, err
+	}
+
+	tag := &schema.TagCount{
+		Name:  tagName,
+		Count: count,
+	}
+
+	return tag, nil
 }
 
 func QueryRow(stmt *sql.Stmt, args ...interface{}) *sql.Row {
