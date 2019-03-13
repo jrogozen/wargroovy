@@ -77,6 +77,7 @@ photos have one map
 - [x] get map apis should return a user's vote on a map
 - [x] sort map list by rating
 - [x] list map apis should return aggregate score per map
+- [ ] fix users should be able to override previous vote
 
 ### tags feature
 - [x] /map/tags get most popular tags

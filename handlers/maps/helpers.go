@@ -44,7 +44,7 @@ func ValidateUpdate(configuration *config.Config, claims map[string]interface{},
 //TODO: refactor this to be used elsewhere
 func appendToQueryCondition(s string, append string) string {
 	if s == "" {
-		return fmt.Sprintf("where %s", append)
+		return fmt.Sprintf("where (%s", append)
 	}
 
 	return fmt.Sprintf("%s OR %s", s, append)
@@ -52,7 +52,7 @@ func appendToQueryCondition(s string, append string) string {
 
 func appendToExistingQueryCondition(s string, append string) string {
 	if s == "" {
-		return fmt.Sprintf("and %s", append)
+		return fmt.Sprintf("and (%s", append)
 	}
 
 	return fmt.Sprintf("%s OR %s", s, append)
@@ -156,7 +156,7 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	typeQueryString := ""
 
 	if t == "all" {
-		typeQueryString = "WHERE m.type is not null"
+		typeQueryString = "WHERE (m.type is not null)"
 	} else {
 		filterFunc := func(s string) bool {
 			return strings.Contains(s, "scenario") || strings.Contains(s, "skirmish") || strings.Contains(s, "puzzle")
@@ -164,7 +164,7 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 
 		types := u.Choose(strings.Split(t, ","), filterFunc)
 
-		typeQueryString = constructTypeQueryString(types)
+		typeQueryString = constructTypeQueryString(types) + ")"
 	}
 
 	options.Type = typeQueryString
@@ -174,7 +174,7 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	if tg != "all" {
 		tags := strings.Split(tg, ",")
 
-		tagsQueryString = constructTagQueryString(tags)
+		tagsQueryString = constructTagQueryString(tags) + ")"
 	}
 
 	options.Tags = tagsQueryString

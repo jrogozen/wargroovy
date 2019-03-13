@@ -447,6 +447,7 @@ func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) 
 		"tags":    options.Tags,
 	}).Info("listing map with options")
 
+	log.Info(qtext)
 	rows, err := db.Conn.Query(qtext)
 
 	if err != nil {
