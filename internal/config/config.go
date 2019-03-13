@@ -46,15 +46,17 @@ func Migrate(config *Config) {
 	// Get the latest possible migration
 	latest, err := goose.GetMostRecentDBVersion(migrateConf.MigrationsDir)
 
+	log.WithField("latest", latest).Info("goose: migrating to latest")
+
 	if err != nil {
-		log.Error(err)
+		log.WithField("err", err).Error("goose: could not get latest migration")
 		return
 	}
 
 	err = goose.RunMigrationsOnDb(migrateConf, migrateConf.MigrationsDir, latest, config.DB.Conn)
 
 	if err != nil {
-		log.Error(err)
+		log.WithField("err", err).Error("goose: could not run migration")
 		return
 	}
 }

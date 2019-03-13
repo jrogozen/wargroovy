@@ -5,20 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jrogozen/wargroovy/schema"
-	// u "github.com/jrogozen/wargroovy/utils"
+	// u "wargroovy/utils"
 	"github.com/lib/pq"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
-
-type PsqlDB struct {
-	Conn *sql.DB
-
-	users userSQL
-	maps  mapSQL
-}
 
 type userSQL struct {
 	// list       *sql.Stmt
@@ -46,6 +39,13 @@ type mapSQL struct {
 	insertTag     *sql.Stmt
 }
 
+type PsqlDB struct {
+	Conn *sql.DB
+
+	users userSQL
+	maps  mapSQL
+}
+
 func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	log.Info(connectionString)
 
@@ -65,6 +65,10 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: could not establish a connection: %v", err)
 	}
 
+	return db, nil
+}
+
+func PrepareDB(db *PsqlDB) (*PsqlDB, error) {
 	var userInsert *sql.Stmt
 	var userGet *sql.Stmt
 	var userGetByLogin *sql.Stmt
@@ -81,6 +85,8 @@ func NewPostgresDB(connectionString string) (*PsqlDB, error) {
 	var mapRate *sql.Stmt
 	var mapUserRating *sql.Stmt
 	var mapInsertTag *sql.Stmt
+
+	var err error
 
 	if userInsert, err = db.Conn.Prepare(insertUserStatement); err != nil {
 		return nil, fmt.Errorf("psql: prepare user insert: %v", err)

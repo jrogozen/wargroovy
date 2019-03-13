@@ -1,6 +1,8 @@
 # Build the module.
 steps:
 - name: 'bash'
+  args: ['sh', 'pre-deploy.sh']
+  dir: 'web'
 - name: 'golang'
   env: ['GO111MODULE=on']
   args: ['go', 'build', './...']

@@ -3,3 +3,4 @@ web/gin-bin
 .env
 vendor
 .DS_Store
+web/src
