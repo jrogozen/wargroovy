@@ -80,7 +80,10 @@ func InitJWT() *jwtauth.JWTAuth {
 func (config *Config) GetToken(userID int64) string {
 	admin := false
 
-	_, tokenString, _ := config.TokenAuth.Encode(jwt.MapClaims{"UserID": userID, "Admin": admin})
+	_, tokenString, _ := config.TokenAuth.Encode(jwt.MapClaims{
+		"UserID": userID,
+		"Admin":  admin,
+	})
 
 	log.WithFields(log.Fields{
 		"token":  tokenString,
