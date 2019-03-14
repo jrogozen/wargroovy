@@ -110,7 +110,7 @@ comments can nest max 2 levels (main thread, reply)
 ### helpful commands
 
 #### connect to production sql
-`gcloud sql connect wargroovy-production -u postgres`
+`PGDATABASE=production gcloud sql connect wargroovy-production -u postgres`
 
 #### deploy app
 `gcloud app deploy`

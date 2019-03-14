@@ -19,6 +19,7 @@ func AttachAuthCookie(token string, w http.ResponseWriter) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
+		Domain:   ".wargroovy.com",
 	}
 
 	http.SetCookie(w, responseCookie)
