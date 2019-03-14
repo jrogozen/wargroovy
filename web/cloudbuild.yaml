@@ -1,6 +1,6 @@
 # Build the module.
 steps:
-- name: 'ubuntu'
+- name: 'gcr.io/wargroovy/ubuntu-rsync'
   args: ['bash', 'pre-deploy.sh']
   dir: 'web'
 - name: 'golang'
