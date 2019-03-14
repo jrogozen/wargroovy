@@ -33,7 +33,8 @@ func Migrate(config *Config) {
 	p, _ := filepath.Abs("../db/migrations")
 
 	migrateConf := &goose.DBConf{
-		MigrationsDir: p,
+		//TODO: see if this works for app engine deploy
+		MigrationsDir: "./src/db/migrations",
 		Env:           "development",
 		Driver: goose.DBDriver{
 			Name:    "postgres",
@@ -49,7 +50,10 @@ func Migrate(config *Config) {
 	log.WithField("latest", latest).Info("goose: migrating to latest")
 
 	if err != nil {
-		log.WithField("err", err).Error("goose: could not get latest migration")
+		log.WithFields(log.Fields{
+			"err":           err,
+			"migrationPath": p,
+		}).Error("goose: could not get latest migration")
 		return
 	}
 
