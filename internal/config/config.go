@@ -117,8 +117,12 @@ func New() (*Config, error) {
 		log.Warn("Error loading dotenv", err)
 	}
 
-	db := MakeDB()
-	config.DB = db
+	database := MakeDB()
+	config.DB = database
+
+	Migrate(&config)
+
+	db.PrepareDB(database)
 
 	// constants setup
 	port := os.Getenv("PORT")
@@ -129,8 +133,6 @@ func New() (*Config, error) {
 	config.Constants = constants
 
 	config.TokenAuth = InitJWT()
-
-	Migrate(&config)
 
 	StorageBucketName := os.Getenv("STORAGE_BUCKET_NAME")
 	StorageBucket, err := configureStorage(StorageBucketName)
