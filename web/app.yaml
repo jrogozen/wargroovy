@@ -1,5 +1,6 @@
 runtime: go111
 env: standard
+service: 'wargroovy-api'
 env_variables:
   PORT: 8080
   jwt_secret: Dnip44WoadZayKF6
