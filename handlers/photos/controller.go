@@ -25,7 +25,9 @@ func UploadPhotos(configuration *config.Config) http.HandlerFunc {
 		fhs := r.MultipartForm.File["photos"]
 
 		photoURLs := make([]string, 0)
-		log.Info("hello?")
+
+		log.WithField("fhs", fhs).Info("upload: fhs")
+
 		for _, fh := range fhs {
 			f, err := fh.Open()
 
@@ -36,12 +38,16 @@ func UploadPhotos(configuration *config.Config) http.HandlerFunc {
 			}
 
 			if err == http.ErrMissingFile {
+				log.WithField("err", err).Error("photo upload: missing file in http request")
+
 				w.WriteHeader(status)
 				u.Respond(w, r, u.Message(false, "no photo to upload"))
 				return
 			}
 
 			if err != nil {
+				log.WithField("err", err).Error("photo upload: error")
+
 				w.WriteHeader(status)
 				u.Respond(w, r, u.Message(false, err.Error()))
 				return
@@ -52,6 +58,11 @@ func UploadPhotos(configuration *config.Config) http.HandlerFunc {
 		response["urls"] = photoURLs
 
 		w.WriteHeader(http.StatusOK)
+
+		log.WithFields(log.Fields{
+			"response": response,
+		}).Info("upload: sending response")
+
 		u.Respond(w, r, response)
 		return
 	})

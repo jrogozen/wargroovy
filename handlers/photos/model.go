@@ -46,6 +46,8 @@ func Upload(configuration *config.Config, f multipart.File, fh *multipart.FileHe
 	const publicURL = "https://storage.googleapis.com/%s/%s"
 	uploadedURL := fmt.Sprintf(publicURL, configuration.StorageBucketName, name)
 
+	log.WithField("url", uploadedURL).Info("upload: uploaded file")
+
 	response := u.Message(true, "Uploaded photos")
 	response["url"] = uploadedURL
 

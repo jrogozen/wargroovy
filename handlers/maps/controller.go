@@ -72,6 +72,21 @@ func GetAMapBySlug(configuration *config.Config) http.HandlerFunc {
 	})
 }
 
+func GetAMapByDownloadCode(configuration *config.Config) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// requires jwt-auth middleware to be used in part of the router stack
+		_, claims, _ := jwtauth.FromContext(r.Context())
+
+		code := chi.URLParam(r, "downloadCode")
+
+		response, status := FindMapByDownloadCode(configuration, code, claims)
+
+		w.WriteHeader(status)
+		u.Respond(w, r, response)
+		return
+	})
+}
+
 func GetMapList(configuration *config.Config) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sortOptions := GetSortOptions(r)

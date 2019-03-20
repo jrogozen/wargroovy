@@ -50,11 +50,13 @@ func GetAUser(configuration *config.Config) http.HandlerFunc {
 			return
 		}
 
+		log.WithField("claims", claims).Info("Found claims")
+
 		userIDString := fmt.Sprintf("%d", int(claims["UserID"].(float64)))
 
 		log.WithFields(log.Fields{
 			"userIDString": userIDString,
-		}).Info("Found UserID from jwt")
+		}).Info("Found UserID from claims")
 
 		resp, status := FindUser(configuration, userIDString)
 

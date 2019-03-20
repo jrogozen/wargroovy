@@ -126,6 +126,37 @@ func FindMapBySlug(configuration *config.Config, slug string, claims map[string]
 	return response, http.StatusOK
 }
 
+func FindMapByDownloadCode(configuration *config.Config, code string, claims map[string]interface{}) (map[string]interface{}, int) {
+	m, err := configuration.DB.GetMapByDownloadCode(code)
+
+	if err != nil {
+		return u.Message(false, err.Error()), http.StatusBadRequest
+	}
+
+	if claims["UserID"] != nil {
+		userID := int64(claims["UserID"].(float64))
+
+		rating, err := configuration.DB.GetMapUserRating(m.ID, userID)
+
+		if err == nil {
+			m.UserRating = "thumbs_down"
+
+			if rating > 1 {
+				m.UserRating = "thumbs_up"
+			}
+		} else {
+			m.UserRating = "not_rated"
+		}
+	} else {
+		m.UserRating = "not_rated"
+	}
+
+	response := u.Message(true, "Map found")
+	response["map"] = m
+
+	return response, http.StatusOK
+}
+
 func Create(configuration *config.Config, claims map[string]interface{}, m *schema.Map) (map[string]interface{}, int) {
 	if resp, ok := Validate(configuration, claims, m); !ok {
 		return resp, http.StatusForbidden
@@ -189,6 +220,10 @@ func Delete(configuration *config.Config, claims map[string]interface{}, mapIDSt
 	mapID, _ := strconv.ParseInt(mapIDString, 10, 64)
 
 	originalMap, err := configuration.DB.GetMap(mapID)
+
+	log.WithFields(log.Fields{
+		"mapID": mapID,
+	}).Info("Deleting map with id")
 
 	if err != nil {
 		return u.Message(false, err.Error()), http.StatusBadRequest

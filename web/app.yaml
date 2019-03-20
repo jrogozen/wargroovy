@@ -14,3 +14,5 @@ beta_settings:
 handlers:
 - url: /.*
   script: auto
+manual_scaling:
+  instances: 1

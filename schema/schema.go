@@ -7,6 +7,7 @@ import (
 	"github.com/rs/xid"
 	// log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"regexp"
 	"strings"
 )
 
@@ -100,8 +101,12 @@ func (m *Map) Merge(u *Map) {
 	if u.Name != "" {
 		m.Name = u.Name
 
+		reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+
+		processedName := reg.ReplaceAllString(m.Name, "-")[0:10]
+
 		// need to generate a new slug
-		slug := strings.ToLower(strings.Replace(m.Name, " ", "-", -1)) + "-" + xid.New().String()
+		slug := strings.ToLower(processedName) + "-" + xid.New().String()
 
 		m.Slug = slug
 	}

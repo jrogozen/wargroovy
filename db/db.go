@@ -9,6 +9,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -24,19 +25,20 @@ type userSQL struct {
 }
 
 type mapSQL struct {
-	insert        *sql.Stmt
-	insertPhotos  *sql.Stmt
-	get           *sql.Stmt
-	getBySlug     *sql.Stmt
-	getPhotos     *sql.Stmt
-	deletePhoto   *sql.Stmt
-	listBy        *sql.Stmt
-	update        *sql.Stmt
-	delete        *sql.Stmt
-	view          *sql.Stmt
-	rate          *sql.Stmt
-	getUserRating *sql.Stmt
-	insertTag     *sql.Stmt
+	insert            *sql.Stmt
+	insertPhotos      *sql.Stmt
+	get               *sql.Stmt
+	getBySlug         *sql.Stmt
+	getByDownloadCode *sql.Stmt
+	getPhotos         *sql.Stmt
+	deletePhoto       *sql.Stmt
+	listBy            *sql.Stmt
+	update            *sql.Stmt
+	delete            *sql.Stmt
+	view              *sql.Stmt
+	rate              *sql.Stmt
+	getUserRating     *sql.Stmt
+	insertTag         *sql.Stmt
 }
 
 type PsqlDB struct {
@@ -85,6 +87,7 @@ func PrepareDB(db *PsqlDB) (*PsqlDB, error) {
 	var mapRate *sql.Stmt
 	var mapUserRating *sql.Stmt
 	var mapInsertTag *sql.Stmt
+	var mapGetByDownloadCdode *sql.Stmt
 
 	var err error
 
@@ -148,6 +151,10 @@ func PrepareDB(db *PsqlDB) (*PsqlDB, error) {
 		return nil, fmt.Errorf("psql: prepare insert map tag: %v", err)
 	}
 
+	if mapGetByDownloadCdode, err = db.Conn.Prepare(getMapByDownloadCodeStatement); err != nil {
+		return nil, fmt.Errorf("psql: prepare get map by download code: %v", err)
+	}
+
 	db.users.insert = userInsert
 	db.users.get = userGet
 	db.users.getByLogin = userGetByLogin
@@ -157,6 +164,7 @@ func PrepareDB(db *PsqlDB) (*PsqlDB, error) {
 	db.maps.insertPhotos = mapPhotosInsert
 	db.maps.get = mapGet
 	db.maps.getBySlug = mapGetBySlug
+	db.maps.getByDownloadCode = mapGetByDownloadCdode
 	db.maps.update = mapUpdate
 	db.maps.deletePhoto = mapPhotoDelete
 	db.maps.delete = mapDelete
@@ -278,7 +286,12 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	now := time.Now().UnixNano()
 
 	// nicely formatted unique url
-	slug := strings.ToLower(strings.Replace(m.Name, " ", "-", -1)) + "-" + xid.New().String()
+	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+
+	processedName := reg.ReplaceAllString(m.Name, "-")[0:10]
+
+	// need to generate a new slug
+	slug := strings.ToLower(processedName) + "-" + xid.New().String()
 
 	var insertedID int64
 	var err error
@@ -406,6 +419,42 @@ func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("psql: could not find map with slug %s", slug)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("psql: could not get map: %v", err)
+	}
+
+	return m, nil
+}
+
+const getMapByDownloadCodeStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
+FROM maps m
+left join (
+	select map_id, string_agg(url, ',') AS photos
+	from map_photos
+	GROUP BY map_id
+) p ON m.id = map_id
+left join (
+	select map_id, round(cast(sum(rating) as decimal) / (cast(count(rating) as decimal) * 2), 2) * 100 as rating
+	from map_ratings
+	group by map_id
+) r on m.id = r.map_id
+left join (
+	select map_id, string_agg(tag_name, ',') as tags
+	from map_tags
+	group by map_id
+) t on m.id = t.map_id
+left join users u
+on m.user_id = u.id
+WHERE download_code = $1
+`
+
+func (db *PsqlDB) GetMapByDownloadCode(code string) (*schema.Map, error) {
+	m, err := scanMap(db.maps.getByDownloadCode.QueryRow(code))
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("psql: could not find map with download code %s", code)
 	}
 
 	if err != nil {

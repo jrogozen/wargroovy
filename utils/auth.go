@@ -39,6 +39,12 @@ func IsUserAuthorized(attemptedUserID int64, claims map[string]interface{}) (map
 	actualUserID := int64(claims["UserID"].(float64))
 
 	if actualUserID != attemptedUserID {
+		log.WithFields(log.Fields{
+			"mapUserID":    attemptedUserID,
+			"claimsUserID": actualUserID,
+			"claims":       claims,
+		}).Info("could not match userID and claimsUserID")
+
 		return Message(false, "Mismatched token userId and requestId"), false
 	}
 

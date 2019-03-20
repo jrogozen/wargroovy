@@ -27,6 +27,7 @@ func Routes(configuration *config.Config) *chi.Mux {
 
 		router.Get("/list", GetMapList(configuration))
 		router.Get("/bySlug/{slug}", GetAMapBySlug(configuration))
+		router.Get("/byDownloadCode/{downloadCode}", GetAMapByDownloadCode(configuration))
 		router.Get("/{mapId}", GetAMap(configuration))
 		router.Get("/tags", GetMapListTags(configuration))
 	})
