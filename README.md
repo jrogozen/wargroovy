@@ -116,7 +116,7 @@ comments can nest max 2 levels (main thread, reply)
 `gcloud app deploy`
 
 #### deploy gcloud functions
-`cd functions && gcloud functions deploy functions --entry-point RedditBot --runtime go111 --set-env-vars WARGROOVY_API=https://api.wargroovy.com,WARGROOVY_WEB_API=https://wargroovy.com,USER_TOKEN=`
+`cd functions && gcloud functions deploy RedditBot --runtime go111 --env-vars-file .env.yaml --trigger-http`
 
 ### local dev
 `cd web && gin -p 4000 -a 8080 -t ../ -d . run main.go`

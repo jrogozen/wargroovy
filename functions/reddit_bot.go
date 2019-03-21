@@ -337,7 +337,7 @@ func jsonEscape(i string) string {
 	return s[1 : len(s)-1]
 }
 
-func RedditBot() {
+func RedditBot(http.ResponseWriter, *http.Request) {
 	subreddits := []string{
 		"customgroove",
 		"wargroove",
@@ -382,7 +382,7 @@ func RedditBot() {
 					Name:         strings.Replace(listing.Data.Title, `\`, `\\`, -1),
 					DownloadCode: code,
 					Type:         getType(&listing.Data),
-					UserID:       1,
+					UserID:       4,
 					Tags:         getMapTags(&listing.Data),
 				}
 

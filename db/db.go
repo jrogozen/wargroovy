@@ -288,7 +288,13 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	// nicely formatted unique url
 	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
 
-	processedName := reg.ReplaceAllString(m.Name, "-")[0:10]
+	maxSlugLen := 10
+
+	processedName := strings.TrimSpace(reg.ReplaceAllString(m.Name, "-"))
+
+	if len(processedName) > maxSlugLen {
+		processedName = processedName[0:maxSlugLen]
+	}
 
 	// need to generate a new slug
 	slug := strings.ToLower(processedName) + "-" + xid.New().String()
