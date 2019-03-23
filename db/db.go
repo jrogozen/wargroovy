@@ -385,7 +385,7 @@ WHERE m.id = $1
 `
 
 func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
-	m, err := scanMap(db.maps.get.QueryRow(id))
+	m, _, err := scanMap(db.maps.get.QueryRow(id))
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("psql: could not find map with id %d", id)
@@ -421,7 +421,7 @@ WHERE slug = $1
 `
 
 func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
-	m, err := scanMap(db.maps.getBySlug.QueryRow(slug))
+	m, _, err := scanMap(db.maps.getBySlug.QueryRow(slug))
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("psql: could not find map with slug %s", slug)
@@ -457,7 +457,7 @@ WHERE download_code = $1
 `
 
 func (db *PsqlDB) GetMapByDownloadCode(code string) (*schema.Map, error) {
-	m, err := scanMap(db.maps.getByDownloadCode.QueryRow(code))
+	m, _, err := scanMap(db.maps.getByDownloadCode.QueryRow(code))
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("psql: could not find map with download code %s", code)
@@ -470,7 +470,7 @@ func (db *PsqlDB) GetMapByDownloadCode(code string) (*schema.Map, error) {
 	return m, nil
 }
 
-const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
+const listByMapStatement = `select m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags, count(*) OVER() AS total_count
 from maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -496,7 +496,7 @@ limit %d
 offset %d
 `
 
-func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) {
+func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, int, error) {
 	// order by is dynamic and cannot be prepared
 	qtext := fmt.Sprintf(listByMapStatement, options.Type, options.Tags, options.OrderBy, options.Limit, options.Offset)
 
@@ -512,24 +512,27 @@ func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, error) 
 	rows, err := db.Conn.Query(qtext)
 
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	defer rows.Close()
 
 	var maps []*schema.Map
+	var totalCount int
 
 	for rows.Next() {
-		m, err := scanMap(rows)
+		m, tc, err := scanMap(rows)
 
 		if err != nil {
-			return nil, fmt.Errorf("psql: could not read row: %v", err)
+			return nil, 0, fmt.Errorf("psql: could not read row: %v", err)
 		}
+
+		totalCount = tc
 
 		maps = append(maps, m)
 	}
 
-	return maps, nil
+	return maps, totalCount, nil
 }
 
 const updateMapStatement = `UPDATE maps
@@ -756,7 +759,7 @@ func scanUser(s rowScanner) (*schema.User, error) {
 	return user, nil
 }
 
-func scanMap(s rowScanner) (*schema.Map, error) {
+func scanMap(s rowScanner) (*schema.Map, int, error) {
 	var (
 		id           int64
 		createdAt    int
@@ -772,6 +775,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		username     sql.NullString
 		rating       sql.NullFloat64
 		tags         sql.NullString
+		totalCount   int
 	)
 
 	if err := s.Scan(
@@ -789,8 +793,9 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		&username,
 		&rating,
 		&tags,
+		&totalCount,
 	); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var photosArray []string
@@ -839,7 +844,7 @@ func scanMap(s rowScanner) (*schema.Map, error) {
 		Tags:         tagsArray,
 	}
 
-	return m, nil
+	return m, totalCount, nil
 }
 
 func scanPhoto(s rowScanner) (string, error) {

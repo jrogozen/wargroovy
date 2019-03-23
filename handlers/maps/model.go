@@ -177,7 +177,7 @@ func Create(configuration *config.Config, claims map[string]interface{}, m *sche
 
 // //FindMapList returns ordered list of maps
 func FindMapList(configuration *config.Config, options *schema.SortOptions) (map[string]interface{}, int) {
-	maps, err := configuration.DB.ListByMap(options)
+	maps, totalCount, err := configuration.DB.ListByMap(options)
 
 	if err != nil {
 		log.Error(err)
@@ -187,6 +187,7 @@ func FindMapList(configuration *config.Config, options *schema.SortOptions) (map
 
 	response := u.Message(true, "Maps found")
 	response["maps"] = maps
+	response["total_maps"] = totalCount
 
 	return response, http.StatusOK
 }

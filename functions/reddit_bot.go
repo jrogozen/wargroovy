@@ -165,7 +165,7 @@ func getType(listing *Listing) string {
 }
 
 func getDescriptionRaw(listing *Listing) (map[string]interface{}, error) {
-	s := fmt.Sprintf("{\"markdown\":\"## %s\\n*created by%s*\\n%s\\n[reddit url](%s)\"}", listing.Title, listing.Author, jsonEscape(listing.Selftext), listing.URL)
+	s := fmt.Sprintf("{\"markdown\":\"## %s\\n*created by%s*\\n%s\\n[reddit url](https://reddit.com%s)\"}", listing.Title, listing.Author, jsonEscape(listing.Selftext), listing.Permalink)
 
 	// log.WithField("markdown", s).Info("sending markdown to wargroovy-web")
 
@@ -341,6 +341,7 @@ func RedditBot(http.ResponseWriter, *http.Request) {
 	subreddits := []string{
 		"customgroove",
 		"wargroove",
+		"WargrooveCompetitive",
 	}
 
 	for _, sr := range subreddits {
@@ -348,7 +349,7 @@ func RedditBot(http.ResponseWriter, *http.Request) {
 
 		str.WriteString("https://reddit.com/r/")
 		str.WriteString(sr)
-		str.WriteString("/hot.json?limit=50&show=all")
+		str.WriteString("/new.json?limit=100&show=all&t=hour")
 
 		log.WithField("url", str.String()).Info("reddit: requesting")
 
