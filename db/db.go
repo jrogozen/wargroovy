@@ -362,7 +362,7 @@ func (db *PsqlDB) AddMap(m *schema.Map) (int64, error) {
 	return insertedID, nil
 }
 
-const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
+const getMapStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags, 0 as total_count
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -398,7 +398,7 @@ func (db *PsqlDB) GetMap(id int64) (*schema.Map, error) {
 	return m, nil
 }
 
-const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
+const getMapBySlugStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags, 0 as total_count
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
@@ -434,7 +434,7 @@ func (db *PsqlDB) GetMapBySlug(slug string) (*schema.Map, error) {
 	return m, nil
 }
 
-const getMapByDownloadCodeStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags
+const getMapByDownloadCodeStatement = `SELECT m.id, m.created_at, m.updated_at, m.name, m.description, m.download_code, m.type, m.user_id, m.views, m.slug, photos, u.username, rating, tags, 0 as total_count
 FROM maps m
 left join (
 	select map_id, string_agg(url, ',') AS photos
