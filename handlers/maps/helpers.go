@@ -82,6 +82,19 @@ func constructTagQueryString(tags []string) string {
 	return tagQueryString
 }
 
+func constructSearchQueryString(search string) string {
+	// relate to db map query fields
+	fields := []string{"m.name", "tags", "username"}
+
+	var searchQueryString string
+
+	for _, f := range fields {
+		searchQueryString = appendToExistingQueryCondition(searchQueryString, fmt.Sprintf("%s ilike '%%%s%%'", f, search))
+	}
+
+	return searchQueryString
+}
+
 func GetTagSortOptions(r *http.Request) *schema.TagSortOptions {
 	options := &schema.TagSortOptions{}
 
@@ -121,6 +134,7 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	orderBy := u.StringWithDefault(r.URL.Query().Get("orderBy"), "created_descending")
 	t := u.StringWithDefault(r.URL.Query().Get("type"), "all")
 	tg := u.StringWithDefault(r.URL.Query().Get("tags"), "all")
+	search := u.StringWithDefault(r.URL.Query().Get("search"), "all")
 
 	limitInt, _ := strconv.Atoi(limit)
 	offsetInt, _ := strconv.Atoi(offset)
@@ -128,7 +142,12 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 	options.Limit = limitInt
 	options.Offset = offsetInt
 
-	orderQueryString := ""
+	var (
+		orderQueryString  string
+		typeQueryString   string
+		tagsQueryString   string
+		searchQueryString string
+	)
 
 	switch orderBy {
 	case "created_ascending":
@@ -151,10 +170,6 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 		orderQueryString = "created_at desc"
 	}
 
-	options.OrderBy = orderQueryString
-
-	typeQueryString := ""
-
 	if t == "all" {
 		typeQueryString = "WHERE (m.type is not null)"
 	} else {
@@ -167,17 +182,20 @@ func GetSortOptions(r *http.Request) *schema.SortOptions {
 		typeQueryString = constructTypeQueryString(types) + ")"
 	}
 
-	options.Type = typeQueryString
-
-	tagsQueryString := ""
-
 	if tg != "all" {
 		tags := strings.Split(tg, ",")
 
 		tagsQueryString = constructTagQueryString(tags) + ")"
 	}
 
+	if search != "all" {
+		searchQueryString = constructSearchQueryString(search) + ")"
+	}
+
 	options.Tags = tagsQueryString
+	options.Type = typeQueryString
+	options.OrderBy = orderQueryString
+	options.Search = searchQueryString
 
 	return options
 }

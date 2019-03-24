@@ -144,6 +144,7 @@ type SortOptions struct {
 	OrderBy string
 	Type    string
 	Tags    string
+	Search  string
 }
 
 type TagSortOptions struct {

@@ -349,7 +349,7 @@ func RedditBot(http.ResponseWriter, *http.Request) {
 
 		str.WriteString("https://reddit.com/r/")
 		str.WriteString(sr)
-		str.WriteString("/new.json?limit=100&show=all&t=hour")
+		str.WriteString("/new.json?limit=100&show=all")
 
 		log.WithField("url", str.String()).Info("reddit: requesting")
 

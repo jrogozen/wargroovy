@@ -491,6 +491,7 @@ left join users u
 on m.user_id = u.id
 %s
 %s
+%s
 order by %s
 limit %d
 offset %d
@@ -498,7 +499,7 @@ offset %d
 
 func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, int, error) {
 	// order by is dynamic and cannot be prepared
-	qtext := fmt.Sprintf(listByMapStatement, options.Type, options.Tags, options.OrderBy, options.Limit, options.Offset)
+	qtext := fmt.Sprintf(listByMapStatement, options.Type, options.Tags, options.Search, options.OrderBy, options.Limit, options.Offset)
 
 	log.WithFields(log.Fields{
 		"type":    options.Type,
@@ -506,6 +507,7 @@ func (db *PsqlDB) ListByMap(options *schema.SortOptions) ([]*schema.Map, int, er
 		"limit":   options.Limit,
 		"offset":  options.Offset,
 		"tags":    options.Tags,
+		"search":  options.Search,
 	}).Info("listing map with options")
 
 	log.Info(qtext)
