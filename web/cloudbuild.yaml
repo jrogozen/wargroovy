@@ -8,6 +8,6 @@ steps:
   args: ['go', 'build', './...']
   dir: 'web'
 - name: 'gcr.io/cloud-builders/gcloud'
-  args: ['app', 'deploy', 'app.yaml']
+  args: ['app', 'deploy', 'app.yaml', '--version', 'v1']
   dir: 'web'
 timeout: '1600s'
