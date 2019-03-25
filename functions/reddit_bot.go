@@ -165,7 +165,7 @@ func getType(listing *Listing) string {
 }
 
 func getDescriptionRaw(listing *Listing) (map[string]interface{}, error) {
-	s := fmt.Sprintf("{\"markdown\":\"## %s\\n*created by%s*\\n%s\\n[reddit url](https://reddit.com%s)\"}", listing.Title, listing.Author, jsonEscape(listing.Selftext), listing.Permalink)
+	s := fmt.Sprintf("{\"markdown\":\"## %s\\n*created by %s*\\n%s\\n[reddit url](https://reddit.com%s)\"}", listing.Title, listing.Author, jsonEscape(listing.Selftext), listing.Permalink)
 
 	// log.WithField("markdown", s).Info("sending markdown to wargroovy-web")
 
